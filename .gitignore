@@ -1,0 +1,56 @@
+# Node
+node_modules/
+**/node_modules/
+
+.*
+!.gitignore
+!.firebaserc
+
+# Nuxt
+.nuxt/
+.output/
+.nitro/
+.cache/
+dist/
+
+# Firebase
+.firebase/
+*-debug.log
+*.log
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Public (apps/web)
+apps/web/public/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# System
+.DS_Store
+Thumbs.db
+
+# Build / Cache
+*.tsbuildinfo
+.eslintcache
+.turbo/
+.pnpm-store/
+
+# Coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Other
+*.local
+*.log

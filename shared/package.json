@@ -1,0 +1,9 @@
+{
+  "name": "@plan-ag/shared",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}

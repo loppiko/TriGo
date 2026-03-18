@@ -1,0 +1,7 @@
+{
+  "name": "plan-ag",
+  "private": true,
+  "scripts": {
+    "install:all": "pnpm install"
+  }
+}

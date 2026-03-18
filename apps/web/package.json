@@ -1,0 +1,42 @@
+{
+  "name": "VTT-template",
+  "type": "module",
+  "private": true,
+  "overrides": {
+    "serialize-javascript": ">=7.0.3"
+  },
+  "scripts": {
+    "build-prod": "dotenv -e .env.prod -- nuxt build",
+    "build-l-prod": "dotenv -e .env.localProd -- nuxt build",
+    "build-dev": "dotenv -e .env.develop -- nuxt build",
+    "build-l-dev": "dotenv -e .env.localDevelop -- nuxt build",
+    "dev-prod": "nuxt dev --dotenv .env.prod",
+    "dev-l-prod": "nuxt dev --dotenv .env.localProd",
+    "dev-dev": "nuxt dev --dotenv .env.develop",
+    "dev-l-dev": "nuxt dev --dotenv .env.localDevelop",
+    "generate-prod": "dotenv -e .env.prod -- nuxt generate",
+    "generate-dev": "dotenv -e .env.develop -- nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "devDependencies": {
+    "@iconify-json/logos": "^1.2.10",
+    "@iconify-json/simple-icons": "^1.2.74",
+    "@nuxt/eslint": "^1.15.2",
+    "@types/node": "^22",
+    "@unhead/vue": "^2.0.10",
+    "dotenv-cli": "^10.0.0",
+    "eslint": "^9.19.0",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@nuxt/image": "^1.10.0",
+    "@nuxt/ui": "^4.3.1",
+    "@plan-ag/shared": "workspace:*",
+    "firebase": "^11.6.0",
+    "nuxt": "^4.3.1",
+    "vuefire": "^3.2.2",
+    "zod": "^4.3.6"
+  }
+}
