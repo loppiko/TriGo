@@ -26,6 +26,11 @@
 
 .dark {
   background-color: var(--color-dark);
+  /* Override Nuxt UI dark mode to use our dark palette (inputs, form elements, etc.) */
+  --ui-bg: var(--color-dark);
+  --ui-bg-muted: var(--color-dark-800);
+  --ui-bg-elevated: var(--color-dark-800);
+  --ui-bg-accented: var(--color-dark-700);
 }
 
 .dark body,

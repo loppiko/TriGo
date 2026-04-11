@@ -17,7 +17,8 @@
     "generate-prod": "dotenv -e .env.prod -- nuxt generate",
     "generate-dev": "dotenv -e .env.develop -- nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "typecheck": "vue-tsc --noEmit"
   },
   "devDependencies": {
     "@iconify-json/logos": "^1.2.10",
@@ -28,7 +29,8 @@
     "dotenv-cli": "^10.0.0",
     "eslint": "^9.19.0",
     "tailwindcss": "^4.2.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vue-tsc": "^3.2.6"
   },
   "dependencies": {
     "@nuxt/image": "^1.10.0",

@@ -11,4 +11,15 @@ export interface ErrorResult {
 }
 
 
+export interface FetchErrorResult {
+    success: false;
+    errorCode: number;
+    errorMessage: string;
+    errorData?: unknown;
+}
+
+
 export type Result<T> = SuccessResult<T> | ErrorResult;
+
+
+export type FetchResult<T> = SuccessResult<T> | FetchErrorResult;
