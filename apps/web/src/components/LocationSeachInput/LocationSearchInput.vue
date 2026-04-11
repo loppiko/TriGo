@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, type Ref } from 'vue'
 import { useLocationSearch } from '~/composables/geolocation/useLocationSearch'
-import type { LocationCoordinates, ProcessedLocation } from '~/types/locationSearch/schema'
+import type { ProcessedLocation } from '~/types/locationSearch/schema'
+import type { LocationCoordinates } from '#shared/types/location/schema'
 import { formatDistance } from '~/utils/location/distance'
 
 

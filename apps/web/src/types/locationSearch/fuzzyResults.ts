@@ -1,12 +1,12 @@
 import { DEFAULT_LOCATION_CATEGORIES, POI_CATEGORY_MAPPING } from '~/types/consts/geolocation/poiCategoriesMapping'
 import { FuzzySearchResultType, type LocationCategoryCodeEnum } from './enum'
-import type { FuzzyResultItem, ProcessedLocation } from './schema'
+import type { FuzzyResult, ProcessedLocation } from './schema'
 
 
 /**
  * Enriches a TomTom fuzzy-search row with UI metadata (`icon` + Polish `description`).
  */
-export function fuzzyResultToProcessed(result: FuzzyResultItem): ProcessedLocation {
+export function fuzzyResultToProcessed(result: FuzzyResult): ProcessedLocation {
     return {
         ...result,
         processedCategory: resolveProcessedCategory(result),
@@ -18,7 +18,7 @@ export function fuzzyResultToProcessed(result: FuzzyResultItem): ProcessedLocati
 /**
  * Picks `processedCategory` from POI classifications or fuzzy-search type defaults.
  */
-function resolveProcessedCategory(result: FuzzyResultItem): ProcessedLocation['processedCategory'] {
+function resolveProcessedCategory(result: FuzzyResult): ProcessedLocation['processedCategory'] {
     if (result.type === FuzzySearchResultType.POI) {
         return resolvePoiProcessedCategory(result)
     }
@@ -35,7 +35,7 @@ function resolveProcessedCategory(result: FuzzyResultItem): ProcessedLocation['p
 /**
  * Uses the first TomTom `classifications[].code` when it exists in {@link POI_CATEGORY_MAPPING}; otherwise the POI default.
  */
-function resolvePoiProcessedCategory(result: FuzzyResultItem): ProcessedLocation['processedCategory'] {
+function resolvePoiProcessedCategory(result: FuzzyResult): ProcessedLocation['processedCategory'] {
     const fallback = { ...DEFAULT_LOCATION_CATEGORIES[FuzzySearchResultType.POI] }
 
     const classifications = result.poi?.classifications

@@ -4,12 +4,11 @@ import { ENUM_JSDOC_FILTERED_FUZZY_TYPES } from '~/types/locationSearch/enum'
 import { fuzzyResultToProcessed } from '~/types/locationSearch/fuzzyResults'
 import {
     fuzzyResponseSchema,
-    locationCoordinatesSchema,
-    queryResultsSchema,
-    type LocationCoordinates,
-    type LocationFuzzyResults,
+    fuzzyResultSchema,
+    type FuzzyResult as LocationFuzzyResult,
     type ProcessedLocation,
 } from '~/types/locationSearch/schema'
+import { locationCoordinatesSchema, type LocationCoordinates } from '#shared/types/location/schema'
 
 
 /**
@@ -82,7 +81,7 @@ function shouldRunFuzzySearch(query: string): boolean {
  * annotated with `@filtered` in {@link FuzzySearchResultType}, and any address outside
  * Poland (`address.countryCode` must be `PL`).
  */
-function filterRelevantFuzzyResults(results: LocationFuzzyResults): LocationFuzzyResults {
+function filterRelevantFuzzyResults(results: LocationFuzzyResult[]): LocationFuzzyResult[] {
     return results.filter((item) => {
         if (ENUM_JSDOC_FILTERED_FUZZY_TYPES.has(item.type)) {
             return false
@@ -156,7 +155,7 @@ async function fetchFuzzyResults(
             return []
         }
 
-        const validatedQueryResults = queryResultsSchema.safeParse(parsedResponse.data.results)
+        const validatedQueryResults = fuzzyResultSchema.array().safeParse(parsedResponse.data.results)
         if (!validatedQueryResults.success) {
             console.error('[fetchFuzzyResults] Failed to validate query results:', validatedQueryResults.error)
             return []

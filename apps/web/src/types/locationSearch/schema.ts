@@ -1,14 +1,6 @@
 import { z } from 'zod/v4'
 import { FuzzySearchResultType, LocationCategoryCodeEnum } from './enum'
-
-
-/**
- * Shared coordinates schema used across TomTom fuzzy-search responses.
- */
-export const locationCoordinatesSchema = z.object({
-    lat: z.number(),
-    lon: z.number(),
-})
+import { locationCoordinatesSchema } from '#shared/types/location/schema'
 
 
 /**
@@ -53,7 +45,7 @@ export const fuzzyResultSchema = z.object({
     info: z.string().optional(),
     poi: fuzzyPoiSchema.optional(),
     address: fuzzyAddressSchema,
-    position: locationCoordinatesSchema,
+    position: locationCoordinatesSchema
 })
 
 
@@ -73,12 +65,6 @@ export const fuzzyResponseSchema = z.object({
 
 
 /**
- * Primary data shape exposed by the `useLocationSearch` hook.
- */
-export const queryResultsSchema = z.array(fuzzyResultSchema)
-
-
-/**
  * Processed fuzzy result schema.
  */
 const processedCategorySchema = z.object({
@@ -92,7 +78,5 @@ export const processedLocationSchema = fuzzyResultSchema.extend({
 })
 
 
-export type LocationCoordinates = z.infer<typeof locationCoordinatesSchema>
-export type LocationFuzzyResults = z.infer<typeof queryResultsSchema>
-export type FuzzyResultItem = z.infer<typeof fuzzyResultSchema>
+export type FuzzyResult = z.infer<typeof fuzzyResultSchema>
 export type ProcessedLocation = z.infer<typeof processedLocationSchema>

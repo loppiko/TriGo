@@ -1,23 +1,124 @@
 <script setup lang="ts">
 import { z } from 'zod'
-import { infoNotification } from '~/utils/notifications/toast'
+import type { Result } from '#shared/types/core'
+import type { Location } from '#shared/types/location/schema'
+import { reservationSchema, type Reservation } from '#shared/types/reservations/schema'
+import { errorNotification, infoNotification } from '~/utils/notifications/toast'
 import LocationSearchInput from '~/components/LocationSeachInput/LocationSearchInput.vue'
 import { processedLocationSchema, type ProcessedLocation } from '~/types/locationSearch/schema'
+import { PickupTypeEnum } from '#shared/types/reservations/enums'
+import { useReservations } from '~/composables/database/useReservations'
 
 
 definePageMeta({ layout: 'home' })
+
+const { createReservation } = useReservations()
+
+const RESERVATION_INTERNAL_ERROR_TITLE = 'Nieudało się wykonać rezerwacji'
+const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
+  'Wystąpił wewnętrzny błąd aplikacji, prosimy skontaktuj się z nami.'
 
 const pickupLocation = ref<ProcessedLocation | undefined>()
 const destination = ref<ProcessedLocation | undefined>()
 const rideDate = ref('')
 const rideTime = ref('')
-const pickupType = ref<'meet-greet' | 'standard' | null>(null)
+const pickupType = ref<PickupTypeEnum | null>(null)
 const firstName = ref('')
 const lastName = ref('')
 const phoneNumber = ref('')
 
 const step = ref(1)
 const showSuccess = ref(false)
+const isReservationSubmitting = ref(false)
+
+
+/**
+ * Parses an HTML `input[type="date"]` value (`YYYY-MM-DD`) into a local calendar date.
+ */
+function parseHtmlDateToLocalDate(isoDate: string): Date | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+        return null
+    }
+
+    const parts = isoDate.split('-').map(Number)
+    const year = parts[0]
+    const month = parts[1]
+    const day = parts[2]
+    if (year == null || month == null || day == null) {
+        return null
+    }
+    return new Date(year, month - 1, day)
+}
+
+
+/**
+ * Maps a TomTom processed location into the shared Location shape for reservations.
+ */
+function processedLocationToReservationLocation(processed: ProcessedLocation): Location {
+    return {
+        name: processed.poi?.name ?? processed.address.freeformAddress,
+        description: processed.processedCategory.description,
+        address: {
+            freeformAddress: processed.address.freeformAddress,
+            municipality: processed.address.municipality,
+            countryCode: processed.address.countryCode,
+        },
+        position: {
+            lat: processed.position.lat,
+            lon: processed.position.lon,
+        },
+    }
+}
+
+
+/**
+ * Builds a reservation from current wizard state and validates it against reservationSchema.
+ */
+function buildReservationFromWizardState(): Result<Reservation> {
+    const pickup = pickupLocation.value
+    const dest = destination.value
+    const type = pickupType.value
+
+    if (!pickup || !dest || type == null) {
+        console.error('[buildReservationFromWizardState] Missing required wizard fields')
+        return { success: false, error: 'Missing required wizard fields' }
+    }
+
+    const pickupDate = parseHtmlDateToLocalDate(rideDate.value.trim())
+    if (!pickupDate) {
+        console.error('[buildReservationFromWizardState] Invalid ride date:', rideDate.value)
+        return { success: false, error: 'Invalid ride date' }
+    }
+
+    const trimmedTime = rideTime.value.trim()
+    if (!trimmedTime) {
+        console.error('[buildReservationFromWizardState] Empty ride time')
+        return { success: false, error: 'Empty ride time' }
+    }
+
+    const normalizedPhone = phoneNumber.value.replace(/\s/g, '')
+
+    const candidate: Reservation = {
+        pickupLocation: processedLocationToReservationLocation(pickup),
+        destination: processedLocationToReservationLocation(dest),
+        pickupDate,
+        pickupTime: trimmedTime,
+        pickupType: type,
+        clientDetails: {
+            firstName: firstName.value.trim(),
+            lastName: lastName.value.trim(),
+            phoneNumber: normalizedPhone,
+        },
+    }
+
+    const parsed = reservationSchema.safeParse(candidate)
+    if (!parsed.success) {
+        console.error('[buildReservationFromWizardState] Schema validation failed:', parsed.error)
+        return { success: false, error: 'Reservation schema validation failed' }
+    }
+
+    return { success: true, data: parsed.data }
+}
 
 
 const phase1Schema = z.object({
@@ -29,13 +130,21 @@ const phase1Schema = z.object({
 })
 
 
+/**
+ * `UInput` `type="date"` supplies `YYYY-MM-DD` strings; we parse to the same local {@link Date} used for {@link reservationSchema} `pickupDate`.
+ */
+const phase2RideDateSchema = z
+    .string()
+    .trim()
+    .min(1, 'Wybierz datę przejazdu')
+    .refine((s) => parseHtmlDateToLocalDate(s) !== null, { message: 'Wybierz datę przejazdu' })
+    .transform((s) => parseHtmlDateToLocalDate(s)!)
+
+
 const phase2Schema = z.object({
-    rideDate: z.string().min(1, 'Wybierz datę przejazdu'),
-    rideTime: z.string().min(1, 'Wybierz godzinę przejazdu'),
-    pickupType: z.union([
-        z.literal('meet-greet'),
-        z.literal('standard'),
-    ], { message: 'Wybierz formę odbioru' }),
+    rideDate: phase2RideDateSchema,
+    rideTime: z.iso.time().min(1, 'Wybierz godzinę przejazdu'),
+    pickupType: z.enum(PickupTypeEnum),
 })
 
 
@@ -88,11 +197,14 @@ const isStep3Valid = computed(() =>
     }).success,
 )
 
+
 const steps4Visited = ref<boolean>(false)
+
 
 const allStepsValidAndLastVisited = computed(() =>
     isStep1Valid.value && isStep2Valid.value && isStep3Valid.value && steps4Visited.value,
 )
+
 
 function goToStep(targetStep: number) {
     if (targetStep === 4) {
@@ -100,6 +212,7 @@ function goToStep(targetStep: number) {
     }
     step.value = targetStep
 }
+
 
 function validateAndAdvance() {
     if (step.value === 1) {
@@ -155,6 +268,36 @@ function handleDestinationSelected(location: ProcessedLocation) {
 
 
 /**
+ * Validates wizard state into a reservation payload, persists it, or shows an internal-error toast on failure.
+ */
+async function submitReservation() {
+    if (step.value !== 4) {
+        return
+    }
+
+    const built = buildReservationFromWizardState()
+
+    if (!built.success) {
+        errorNotification(RESERVATION_INTERNAL_ERROR_TITLE, RESERVATION_INTERNAL_ERROR_DESCRIPTION)
+        return
+    }
+
+    isReservationSubmitting.value = true
+    const result = await createReservation(built.data)
+    
+    if (!result.success) {
+        errorNotification(RESERVATION_INTERNAL_ERROR_TITLE, RESERVATION_INTERNAL_ERROR_DESCRIPTION)
+        isReservationSubmitting.value = false
+        return
+    }
+    
+    showSuccess.value = true
+    isReservationSubmitting.value = false
+}
+
+
+
+/**
  * Single-line label for summary UI (TomTom processed location).
  */
 function locationDisplayLabel(location: ProcessedLocation | undefined): string {
@@ -171,21 +314,21 @@ function locationDisplayLabel(location: ProcessedLocation | undefined): string {
 }
 
 
-
 const pickupTypeOptions = [
     {
-        value: 'meet-greet' as const,
+        value: PickupTypeEnum.MEET_AND_GREET,
         title: 'Meet & Greet',
         description: 'Kierowca wyjdzie po Ciebie z tabliczką i pomoże z bagażem',
         icon: 'i-lucide-handshake',
     },
     {
-        value: 'standard' as const,
+        value: PickupTypeEnum.STANDARD,
         title: 'Standard Pickup',
         description: 'Kierowca będzie czekał w samochodzie pod wskazanym adresem',
         icon: 'i-lucide-car',
     },
 ]
+
 
 const formatDate = (dateStr: string) => {
     if (!dateStr) return ''
@@ -580,7 +723,14 @@ const formatDate = (dateStr: string) => {
                         />
                       </div>
                     </div>
-                    <UButton block size="xl" class="mt-6" @click="showSuccess = true">
+                    <UButton
+                      block
+                      size="xl"
+                      class="mt-6"
+                      :loading="isReservationSubmitting"
+                      :disabled="isReservationSubmitting"
+                      @click="submitReservation"
+                    >
                       Zarezerwuj przejazd
                     </UButton>
                   </div>
