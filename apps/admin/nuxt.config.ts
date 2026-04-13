@@ -42,7 +42,7 @@ export default defineNuxtConfig({
 
     icon: {
         clientBundle: {
-            icons: ['logos:google', 'logos:google-icon'],
+            icons: ['logos:google', 'logos:google-icon', 'lucide:map-pin'],
         },
     },
 })
