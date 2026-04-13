@@ -12,6 +12,7 @@ node_modules/
 .nitro/
 .cache/
 dist/
+dist
 
 # Firebase
 .firebase/
