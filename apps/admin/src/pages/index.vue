@@ -72,12 +72,18 @@ function openAssignModal(reservation: Reservation): void {
 async function handleAssignDriver(driver: Driver): Promise<void> {
     const id = assignTargetReservation.value?.id
     if (!id) {
+        console.error('No reservation ID')
+        return
+    }
+
+    if (!driver.id) {
+        console.error('No driver ID')
         return
     }
 
     const result = await updateReservation(id, {
         assignedDriver: {
-            id: driver.id ?? '',
+            id: driver.id,
             name: driver.name,
             phoneNumber: driver.phoneNumber,
         },

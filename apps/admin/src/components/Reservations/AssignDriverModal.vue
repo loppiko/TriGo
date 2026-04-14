@@ -31,6 +31,7 @@ watch(open, (isOpen) => {
 
 function handleConfirm(close: () => void): void {
     if (!selectedDriver.value) {
+        console.error('No driver selected')
         return
     }
     pending.value = true

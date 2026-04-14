@@ -26,6 +26,7 @@ const reservationConverter = {
         const data = snapshot.data()
         return {
             ...data,
+            id: snapshot.id,
             createdAt: data.createdAt ? (data.createdAt as Timestamp).toDate() : undefined,
             updatedAt: data.updatedAt ? (data.updatedAt as Timestamp).toDate() : undefined,
             pickupDate: (data.pickupDate as Timestamp).toDate(),
