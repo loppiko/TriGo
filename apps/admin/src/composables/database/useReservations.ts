@@ -9,7 +9,7 @@ import {
     query,
     orderBy,
 } from 'firebase/firestore'
-import { useFirestore } from 'vuefire'
+import { useDocument, useFirestore } from 'vuefire'
 import type { Result } from '#shared/types/core'
 import type { Reservation } from '#shared/types/reservations/schema'
 
@@ -109,6 +109,14 @@ export function useReservations() {
         }
     }
 
+    /**
+     * Subscribes to a single reservation document by ID for the detail page.
+     */
+    function useReservationById(id: string) {
+        const docRef = doc(db, RESERVATIONS_COLLECTION, id).withConverter(reservationConverter)
+        return useDocument<Reservation>(docRef)
+    }
+
     return {
         reservations,
         reservationsError,
@@ -116,5 +124,6 @@ export function useReservations() {
         createReservation,
         updateReservation,
         deleteReservation,
+        useReservationById,
     }
 }

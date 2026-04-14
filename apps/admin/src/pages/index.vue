@@ -232,7 +232,12 @@ function formatDate(reservation: Reservation): string {
           <div
             v-for="res in activeReservations"
             :key="res.id ?? `${res.pickupDate?.toISOString()}-${res.clientDetails.phoneNumber}`"
-            class="flex flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition-shadow hover:shadow-md hover:ring-gray-300"
+            class="flex cursor-pointer flex-col overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition-shadow hover:shadow-md hover:ring-primary/30"
+            role="button"
+            :tabindex="0"
+            :aria-label="`Otwórz rezerwację ${res.clientDetails.firstName} ${res.clientDetails.lastName}`"
+            @click="res.id && navigateTo(`/${res.id}`)"
+            @keydown.enter="res.id && navigateTo(`/${res.id}`)"
           >
             <!-- Status bar -->
             <div
