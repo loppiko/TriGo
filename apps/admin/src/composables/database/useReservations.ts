@@ -7,7 +7,7 @@ import {
     doc,
     updateDoc,
     query,
-    where,
+    orderBy,
 } from 'firebase/firestore'
 import { useFirestore } from 'vuefire'
 import type { Result } from '#shared/types/core'
@@ -41,7 +41,7 @@ export function useReservations() {
     
     const reservationsQuery = query(
         collection(db, RESERVATIONS_COLLECTION),
-        where('deleted', '==', false)
+        orderBy('pickupDate', 'desc')
     ).withConverter(reservationConverter)
     
     const {data: reservations, error: reservationsError, pending: reservationsPending} = useCollection(reservationsQuery)

@@ -45,4 +45,10 @@ export default defineNuxtConfig({
             icons: ['logos:google', 'logos:google-icon', 'lucide:map-pin'],
         },
     },
+
+    routeRules: {
+        '/reservations': { redirect: '/' },
+        '/reservations/cards': { redirect: '/' },
+        '/reservations/kanban': { redirect: '/?view=kanban' },
+    },
 })

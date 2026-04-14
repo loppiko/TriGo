@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Driver } from '#shared/types/drivers/schema'
+import { UBadge } from '#components'
 import { h, resolveComponent } from 'vue'
 import DeleteConfirmation from '~/components/Confirmation/DeleteConfirmation.vue'
 import DriverModal from '~/components/Drivers/DriverModal.vue'
@@ -93,7 +94,20 @@ const columns = computed(() => {
     void deletingId.value
 
     return [
-        { accessorKey: 'name', header: 'Nazwa' },
+        {
+            accessorKey: 'name',
+            header: 'Nazwa',
+            cell: ({ row }: { row: { original: DriverRow } }) =>
+                h(
+                    UBadge,
+                    {
+                        color: 'neutral',
+                        variant: 'subtle',
+                        size: 'md',
+                    },
+                    () => row.original.name,
+                ),
+        },
         { accessorKey: 'phoneNumber', header: 'Telefon' },
         { accessorKey: 'createdAtLabel', header: 'Utworzono' },
         {

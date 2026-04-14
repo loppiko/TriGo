@@ -10,7 +10,11 @@ const logoutPending = ref(false)
 
 const userEmail = computed(() => user.value?.email ?? '')
 
-const isHomeActive = computed(() => route.path === ROUTES.HOME)
+const isReservationsActive = computed(
+    () =>
+        route.path === ROUTES.HOME
+        || route.path.startsWith('/reservations'),
+)
 
 const isDriversActive = computed(
     () =>
@@ -83,7 +87,7 @@ async function handleSignOut(): Promise<void> {
           :to="ROUTES.HOME"
           icon="i-heroicons-home"
           block
-          :color="isHomeActive ? 'primary' : 'neutral'"
+          :color="isReservationsActive ? 'primary' : 'neutral'"
           variant="soft"
         >
           Rezerwacje

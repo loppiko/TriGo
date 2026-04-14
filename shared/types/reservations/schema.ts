@@ -18,6 +18,7 @@ export const reservationSchema = z.object({
 
     pickupLocation: locationSchema,
     destination: locationSchema,
+    distance: z.number(),
 
     pickupDate: z.date(),
     pickupTime: z.iso.time(),

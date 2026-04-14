@@ -103,6 +103,7 @@ function buildReservationFromWizardState(): Result<Reservation> {
         destination: processedLocationToReservationLocation(dest),
         pickupDate,
         pickupTime: trimmedTime,
+        distance: dest.dist!,
         status: ReservationStatus.WAITING_FOR_ASSIGNMENT,
         pickupType: type,
         clientDetails: {
