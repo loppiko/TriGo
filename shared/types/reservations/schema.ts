@@ -1,6 +1,6 @@
 import { z } from 'zod/v4'
 import { locationSchema } from '../location/schema'
-import { PickupTypeEnum } from './enums'
+import { PickupTypeEnum, ReservationStatus } from './enums'
 
 
 export const clientDetailsSchema = z.object({
@@ -23,6 +23,14 @@ export const reservationSchema = z.object({
     pickupTime: z.iso.time(),
     pickupType: z.enum(PickupTypeEnum),
     clientDetails: clientDetailsSchema,
+
+    deleted: z.boolean().optional(),
+    status: z.enum(ReservationStatus),
+    assignedDriver: z.object({
+        id: z.string(),
+        name: z.string(),
+        phoneNumber: z.string(),
+    }).optional(),
 
     deviceId: z.string().optional(),
     createdAt: z.date().optional(),

@@ -6,7 +6,7 @@ import { reservationSchema, type Reservation } from '#shared/types/reservations/
 import { errorNotification, infoNotification } from '~/utils/notifications/toast'
 import LocationSearchInput from '~/components/LocationSeachInput/LocationSearchInput.vue'
 import { processedLocationSchema, type ProcessedLocation } from '~/types/locationSearch/schema'
-import { PickupTypeEnum } from '#shared/types/reservations/enums'
+import { PickupTypeEnum, ReservationStatus } from '#shared/types/reservations/enums'
 import { useReservations } from '~/composables/database/useReservations'
 
 
@@ -103,6 +103,7 @@ function buildReservationFromWizardState(): Result<Reservation> {
         destination: processedLocationToReservationLocation(dest),
         pickupDate,
         pickupTime: trimmedTime,
+        status: ReservationStatus.WAITING_FOR_ASSIGNMENT,
         pickupType: type,
         clientDetails: {
             firstName: firstName.value.trim(),
