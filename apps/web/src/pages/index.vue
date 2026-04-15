@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { Result } from '#shared/types/core'
-import type { Location } from '#shared/types/location/schema'
+import { TomLocationSchema, type TomLocation } from '#shared/types/location/search/schema'
 import { reservationSchema, type Reservation } from '#shared/types/reservations/schema'
 import { errorNotification, infoNotification } from '~/utils/notifications/toast'
 import LocationSearchInput from '~/components/LocationSeachInput/LocationSearchInput.vue'
-import { processedLocationSchema, type ProcessedLocation } from '~/types/locationSearch/schema'
 import { PickupTypeEnum, ReservationStatus } from '#shared/types/reservations/enums'
 import { useReservations } from '~/composables/database/useReservations'
+import { TomLocationToPlace } from '#shared/types/location/search/tomLocation'
+import { pickupTypeOptions } from '~/utils/ui/reservations'
 
 
 definePageMeta({ layout: 'home' })
@@ -18,8 +19,8 @@ const RESERVATION_INTERNAL_ERROR_TITLE = 'Nieudało się wykonać rezerwacji'
 const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
   'Wystąpił wewnętrzny błąd aplikacji, prosimy skontaktuj się z nami.'
 
-const pickupLocation = ref<ProcessedLocation | undefined>()
-const destination = ref<ProcessedLocation | undefined>()
+const pickupLocation = ref<TomLocation | undefined>()
+const destination = ref<TomLocation | undefined>()
 const rideDate = ref('')
 const rideTime = ref('')
 const pickupType = ref<PickupTypeEnum | null>(null)
@@ -52,26 +53,6 @@ function parseHtmlDateToLocalDate(isoDate: string): Date | null {
 
 
 /**
- * Maps a TomTom processed location into the shared Location shape for reservations.
- */
-function processedLocationToReservationLocation(processed: ProcessedLocation): Location {
-    return {
-        name: processed.poi?.name ?? processed.address.freeformAddress,
-        description: processed.processedCategory.description,
-        address: {
-            freeformAddress: processed.address.freeformAddress,
-            municipality: processed.address.municipality,
-            countryCode: processed.address.countryCode,
-        },
-        position: {
-            lat: processed.position.lat,
-            lon: processed.position.lon,
-        },
-    }
-}
-
-
-/**
  * Builds a reservation from current wizard state and validates it against reservationSchema.
  */
 function buildReservationFromWizardState(): Result<Reservation> {
@@ -99,8 +80,8 @@ function buildReservationFromWizardState(): Result<Reservation> {
     const normalizedPhone = phoneNumber.value.replace(/\s/g, '')
 
     const candidate: Reservation = {
-        pickupLocation: processedLocationToReservationLocation(pickup),
-        destination: processedLocationToReservationLocation(dest),
+        pickupLocation: TomLocationToPlace(pickup),
+        destination: TomLocationToPlace(dest),
         pickupDate,
         pickupTime: trimmedTime,
         distance: dest.dist!,
@@ -124,8 +105,8 @@ function buildReservationFromWizardState(): Result<Reservation> {
 
 
 const phase1Schema = z.object({
-    pickupLocation: processedLocationSchema,
-    destination: processedLocationSchema,
+    pickupLocation: TomLocationSchema,
+    destination: TomLocationSchema,
 }).refine((data) => data.pickupLocation.id !== data.destination.id, {
     message: 'Miejsce odbioru i cel muszą być różne',
     path: ['destination'],
@@ -259,12 +240,12 @@ function validateAndAdvance() {
 }
 
 
-function handlePickupLocationSelected(location: ProcessedLocation) {
+function handlePickupLocationSelected(location: TomLocation) {
     pickupLocation.value = location
 }
 
 
-function handleDestinationSelected(location: ProcessedLocation) {
+function handleDestinationSelected(location: TomLocation) {
     destination.value = location
 }
 
@@ -302,34 +283,18 @@ async function submitReservation() {
 /**
  * Single-line label for summary UI (TomTom processed location).
  */
-function locationDisplayLabel(location: ProcessedLocation | undefined): string {
+function locationDisplayLabel(location: TomLocation | undefined): string {
     if (!location) {
         return ''
     }
 
     return location.poi?.name?.trim()
         ?? location.address.freeformAddress?.trim()
-        ?? [location.address.municipality, location.address.countrySubdivision]
+        ?? [location.address.municipality]
             .filter((value): value is string => Boolean(value))
             .join(', ')
         ?? '—'
 }
-
-
-const pickupTypeOptions = [
-    {
-        value: PickupTypeEnum.MEET_AND_GREET,
-        title: 'Meet & Greet',
-        description: 'Kierowca wyjdzie po Ciebie z tabliczką i pomoże z bagażem',
-        icon: 'i-lucide-handshake',
-    },
-    {
-        value: PickupTypeEnum.STANDARD,
-        title: 'Standard Pickup',
-        description: 'Kierowca będzie czekał w samochodzie pod wskazanym adresem',
-        icon: 'i-lucide-car',
-    },
-]
 
 
 const formatDate = (dateStr: string) => {
@@ -444,7 +409,7 @@ const formatDate = (dateStr: string) => {
           <!-- Current section - centered -->
           <div class="flex-1 flex flex-col items-center justify-center min-h-0 pb-12 w-full">
             <Transition name="phase" mode="out-in">
-              <!-- Phase 1: Location -->
+              <!-- Phase 1: Place -->
               <div v-if="step === 1" key="phase1" class="w-full py-4">
                 <section class="text-center">
                   <div class="flex flex-col items-center mb-4">

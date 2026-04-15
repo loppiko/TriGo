@@ -21,6 +21,13 @@ export default defineNuxtConfig({
                 messagingSenderId: process.env.NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
                 appId: process.env.NUXT_PUBLIC_FIREBASE_APP_ID,
             },
+
+            tomtom: {
+                apiKey: process.env.NUXT_PUBLIC_TOMTOM_API_KEY,
+                fuzzySearchUrl: process.env.NUXT_PUBLIC_TOMTOM_FUZZY_SEARCH_URL,
+                rectangleGeobias: process.env.NUXT_PUBLIC_TOMTOM_RECTANGLE_GEOBIAS,
+                fuzzySearchResponsesLimit: process.env.NUXT_PUBLIC_TOMTOM_FUZZY_SEARCH_RESPONSES_LIMIT,
+            },
         },
     },
 

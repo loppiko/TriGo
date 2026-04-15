@@ -55,3 +55,17 @@ export function pickupTypeLabel(type: Reservation['pickupType']): string {
         return type
     }
 }
+
+
+export const pickupTypeOptions = [
+    { label: 'Standard', value: PickupTypeEnum.STANDARD },
+    { label: 'Meet & Greet', value: PickupTypeEnum.MEET_AND_GREET },
+]
+
+
+export const statusOptions = [
+    { label: 'Oczekuje na kierowcę', value: ReservationStatus.WAITING_FOR_ASSIGNMENT },
+    { label: 'Przypisano kierowcę', value: ReservationStatus.ASSIGNED },
+    { label: 'Zakończono', value: ReservationStatus.COMPLETED },
+    { label: 'Anulowano', value: ReservationStatus.CANCELLED },
+]

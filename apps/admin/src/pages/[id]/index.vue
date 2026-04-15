@@ -2,9 +2,10 @@
 import type { Driver } from '#shared/types/drivers/schema'
 import { ReservationStatus } from '#shared/types/reservations/enums'
 import AssignDriverModal from '~/components/Reservations/AssignDriverModal.vue'
+import ReservationModal from '~/components/Reservations/ReservationModal.vue'
 import { useReservations } from '~/composables/database/useReservations'
 import { ROUTES } from '~/types/consts/pages'
-import { formatRouteDistanceMeters } from '~/utils/ui/distance'
+import { formatRouteDistanceMeters } from '#shared/ui/distance/distance'
 import { errorNotification, successfulNotification } from '~/utils/notifications/toast'
 import {
     pickupTypeLabel,
@@ -24,6 +25,7 @@ const { useReservationById, updateReservation } = useReservations()
 const { data: reservation, pending, error } = useReservationById(id.value)
 
 const assignModalOpen = ref(false)
+const editModalOpen = ref(false)
 
 
 /**
@@ -86,7 +88,7 @@ async function handleAssignDriver(driver: Driver): Promise<void> {
 <template>
   <div class="mx-auto max-w-3xl px-4 py-8">
     <!-- Back nav -->
-    <div class="mb-6 flex items-center gap-3">
+    <div class="mb-6 flex items-center justify-between gap-3">
       <UButton
         :to="ROUTES.HOME"
         variant="ghost"
@@ -95,6 +97,16 @@ async function handleAssignDriver(driver: Driver): Promise<void> {
         size="lg"
       >
         Rezerwacje
+      </UButton>
+      <UButton
+        v-if="reservation"
+        icon="i-heroicons-pencil-square"
+        color="primary"
+        variant="soft"
+        size="md"
+        @click="editModalOpen = true"
+      >
+        Aktualizuj dane rezerwacji
       </UButton>
     </div>
 
@@ -371,6 +383,10 @@ async function handleAssignDriver(driver: Driver): Promise<void> {
     <AssignDriverModal
       v-model:open="assignModalOpen"
       @confirm="handleAssignDriver"
+    />
+    <ReservationModal
+      v-model:open="editModalOpen"
+      :reservation="reservation ?? null"
     />
   </div>
 </template>

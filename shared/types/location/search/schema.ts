@@ -1,6 +1,6 @@
 import { z } from 'zod/v4'
-import { FuzzySearchResultType, LocationCategoryCodeEnum } from './enum'
-import { locationCoordinatesSchema } from '#shared/types/location/schema'
+import { TomSearchResultType as TomSearchResultType, TomLocationCategoryCodeEnum } from './enum'
+import { locationCoordinatesSchema } from '../schema'
 
 
 /**
@@ -9,7 +9,6 @@ import { locationCoordinatesSchema } from '#shared/types/location/schema'
 const fuzzyAddressSchema = z.object({
     freeformAddress: z.string(),
     municipality: z.string(),
-    countrySubdivision: z.string(),
     countryCode: z.string(),
 })
 
@@ -18,7 +17,7 @@ const fuzzyAddressSchema = z.object({
  * POI classification schema.
  */
 const poiClassificationSchema = z.object({
-    code: z.enum(LocationCategoryCodeEnum),
+    code: z.enum(TomLocationCategoryCodeEnum),
 })
 
 /**
@@ -38,7 +37,7 @@ const fuzzyPoiSchema = z.object({
  * @param dist - Distance from the choosen location to the result in meters. Only present when geobias is provided.
  */
 export const fuzzyResultSchema = z.object({
-    type: z.enum(FuzzySearchResultType),
+    type: z.enum(TomSearchResultType),
     id: z.string(),
     score: z.number(),
     dist: z.number().optional(),
@@ -73,10 +72,10 @@ const processedCategorySchema = z.object({
 })
 
 
-export const processedLocationSchema = fuzzyResultSchema.extend({
+export const TomLocationSchema = fuzzyResultSchema.extend({
     processedCategory: processedCategorySchema,
 })
 
 
-export type FuzzyResult = z.infer<typeof fuzzyResultSchema>
-export type ProcessedLocation = z.infer<typeof processedLocationSchema>
+export type TomSearchResult = z.infer<typeof fuzzyResultSchema>
+export type TomLocation = z.infer<typeof TomLocationSchema>

@@ -4,9 +4,10 @@ import type { Driver } from '#shared/types/drivers/schema'
 import type { Reservation } from '#shared/types/reservations/schema'
 import { ReservationStatus } from '#shared/types/reservations/enums'
 import AssignDriverModal from '~/components/Reservations/AssignDriverModal.vue'
+import ReservationModal from '~/components/Reservations/ReservationModal.vue'
 import { useReservations } from '~/composables/database/useReservations'
 import { ROUTES } from '~/types/consts/pages'
-import { formatRouteDistanceMeters } from '~/utils/ui/distance'
+import { formatRouteDistanceMeters } from '#shared/ui/distance/distance'
 import {
     pickupTypeLabel,
     reservationStatusLabel,
@@ -58,6 +59,16 @@ const { reservations, reservationsError, reservationsPending, updateReservation 
 
 const assignModalOpen = ref(false)
 const assignTargetReservation = ref<Reservation | null>(null)
+
+const reservationModalOpen = ref(false)
+
+
+/**
+ * Opens the ReservationModal in create mode.
+ */
+function openCreateModal(): void {
+    reservationModalOpen.value = true
+}
 
 
 function openAssignModal(reservation: Reservation): void {
@@ -167,7 +178,7 @@ function formatDate(reservation: Reservation): string {
       orientation="horizontal"
       highlight
       highlight-color="primary"
-      class="data-[orientation=horizontal]:w-full data-[orientation=horizontal]:border-b border-default mb-8"
+      class="data-[orientation=horizontal]:w-full border-default mb-8"
       :items="navigationItems"
       :ui="navigationMenuUi"
     />
@@ -176,16 +187,32 @@ function formatDate(reservation: Reservation): string {
       v-model:open="assignModalOpen"
       @confirm="handleAssignDriver"
     />
+    <ReservationModal
+      v-model:open="reservationModalOpen"
+      :reservation="null"
+    />
 
     <template v-if="!isKanbanView">
       <div>
-        <div class="mb-8">
-          <h2 class="text-xl font-semibold text-highlighted">
-            Aktualne rezerwacje
-          </h2>
-          <p class="mt-1 text-sm text-muted">
-            Nadchodzące przejazdy (bez zakończonych i anulowanych), posortowane od najbliższego terminu.
-          </p>
+        <div class="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-semibold text-highlighted">
+              Aktualne rezerwacje
+            </h2>
+            <p class="mt-1 text-sm text-muted">
+              Nadchodzące przejazdy (bez zakończonych i anulowanych), posortowane od najbliższego terminu.
+            </p>
+          </div>
+          <UButton
+            icon="i-heroicons-plus"
+            color="primary"
+            variant="solid"
+            size="md"
+            class="shrink-0"
+            @click="openCreateModal"
+          >
+            Dodaj rezerwację
+          </UButton>
         </div>
 
         <UAlert
@@ -227,7 +254,7 @@ function formatDate(reservation: Reservation): string {
 
         <div
           v-else
-          class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
         >
           <div
             v-for="res in activeReservations"
@@ -292,7 +319,7 @@ function formatDate(reservation: Reservation): string {
               <!-- To -->
               <div class="flex items-start gap-3">
                 <div class="flex flex-col items-center">
-                  <span class="size-2.5 rounded-sm bg-gray-700 ring-2 ring-gray-200" />
+                  <span class="size-2.5 rounded-sm bg-gray-500 ring-2 ring-gray-200" />
                 </div>
                 <div class="min-w-0">
                   <p class="text-[11px] font-semibold uppercase tracking-widest text-gray-400">

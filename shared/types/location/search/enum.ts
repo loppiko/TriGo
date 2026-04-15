@@ -1,4 +1,4 @@
-export enum FuzzySearchResultType {
+export enum TomSearchResultType {
     /** Point of Interest — named place (airport, restaurant, gas station, hotel, etc.) */
     POI = 'POI',
 
@@ -27,13 +27,13 @@ export enum FuzzySearchResultType {
 
 
 /**
- * `type` values that carry `@filtered` in {@link FuzzySearchResultType} JSDoc (excluded from UI).
+ * `type` values that carry `@filtered` in {@link TomSearchResultType} JSDoc (excluded from UI).
  */
-export const ENUM_JSDOC_FILTERED_FUZZY_TYPES = new Set<FuzzySearchResultType>([
-    FuzzySearchResultType.GEOGRAPHY,
-    FuzzySearchResultType.ADDRESS_RANGE,
-    FuzzySearchResultType.CROSS_STREET,
-    FuzzySearchResultType.EXTENDED_POSTAL_POINT,
+export const ENUM_JSDOC_FILTERED_FUZZY_TYPES = new Set<TomSearchResultType>([
+    TomSearchResultType.GEOGRAPHY,
+    TomSearchResultType.ADDRESS_RANGE,
+    TomSearchResultType.CROSS_STREET,
+    TomSearchResultType.EXTENDED_POSTAL_POINT,
 ])
 
 
@@ -41,7 +41,7 @@ export const ENUM_JSDOC_FILTERED_FUZZY_TYPES = new Set<FuzzySearchResultType>([
  * TomTom Search API — supported top-level POI category codes (service version 2).
  * @see https://developer.tomtom.com/search-api/documentation/product-information/supported-category-codes
  */
-export enum LocationCategoryCodeEnum {
+export enum TomLocationCategoryCodeEnum {
     ACCESS_GATEWAY = 'ACCESS_GATEWAY',
     ADMINISTRATIVE_DIVISION = 'ADMINISTRATIVE_DIVISION',
     ADVENTURE_SPORTS_VENUE = 'ADVENTURE_SPORTS_VENUE',

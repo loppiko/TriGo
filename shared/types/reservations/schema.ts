@@ -10,6 +10,13 @@ export const clientDetailsSchema = z.object({
 })
 
 
+export const assignedDriverSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    phoneNumber: z.string(),
+})
+
+
 /**
  * @entity Reservation
  */
@@ -27,13 +34,10 @@ export const reservationSchema = z.object({
 
     deleted: z.boolean().optional(),
     status: z.enum(ReservationStatus),
-    assignedDriver: z.object({
-        id: z.string(),
-        name: z.string(),
-        phoneNumber: z.string(),
-    }).optional(),
+    assignedDriver: assignedDriverSchema.optional(),
 
     deviceId: z.string().optional(),
+    createdBy: z.string().optional(),
     createdAt: z.date().optional(),
     updatedAt: z.date().optional(),
 })

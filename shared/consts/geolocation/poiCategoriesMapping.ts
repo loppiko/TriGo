@@ -1,432 +1,432 @@
-import { FuzzySearchResultType, LocationCategoryCodeEnum } from "~/types/locationSearch/enum"
+import { TomSearchResultType, TomLocationCategoryCodeEnum } from "../../types/location/search/enum"
 
 
-export const POI_CATEGORY_MAPPING: Record<LocationCategoryCodeEnum, { icon: string; description: string }> = {
-    [LocationCategoryCodeEnum.ACCESS_GATEWAY]: {
+export const POI_CATEGORY_MAPPING: Record<TomLocationCategoryCodeEnum, { icon: string; description: string }> = {
+    [TomLocationCategoryCodeEnum.ACCESS_GATEWAY]: {
         icon: 'i-heroicons-arrow-right-on-rectangle',
         description: 'Przejście dostępu',
     },
-    [LocationCategoryCodeEnum.ADMINISTRATIVE_DIVISION]: {
+    [TomLocationCategoryCodeEnum.ADMINISTRATIVE_DIVISION]: {
         icon: 'i-heroicons-map',
         description: 'Jednostka administracyjna',
     },
-    [LocationCategoryCodeEnum.ADVENTURE_SPORTS_VENUE]: {
+    [TomLocationCategoryCodeEnum.ADVENTURE_SPORTS_VENUE]: {
         icon: 'i-heroicons-sparkles',
         description: 'Sporty przygodowe',
     },
-    [LocationCategoryCodeEnum.AGRICULTURE]: {
+    [TomLocationCategoryCodeEnum.AGRICULTURE]: {
         icon: 'i-heroicons-truck',
         description: 'Rolnictwo',
     },
-    [LocationCategoryCodeEnum.AIRPORT]: {
+    [TomLocationCategoryCodeEnum.AIRPORT]: {
         icon: 'i-heroicons-paper-airplane',
         description: 'Lotnisko',
     },
-    [LocationCategoryCodeEnum.AMUSEMENT_PARK]: {
+    [TomLocationCategoryCodeEnum.AMUSEMENT_PARK]: {
         icon: 'i-heroicons-face-smile',
         description: 'Park rozrywki',
     },
-    [LocationCategoryCodeEnum.AUTOMOTIVE_DEALER]: {
+    [TomLocationCategoryCodeEnum.AUTOMOTIVE_DEALER]: {
         icon: 'i-heroicons-truck',
         description: 'Salon samochodowy',
     },
-    [LocationCategoryCodeEnum.BANK]: {
+    [TomLocationCategoryCodeEnum.BANK]: {
         icon: 'i-heroicons-building-library',
         description: 'Bank',
     },
-    [LocationCategoryCodeEnum.BEACH]: {
+    [TomLocationCategoryCodeEnum.BEACH]: {
         icon: 'i-heroicons-sun',
         description: 'Plaża',
     },
-    [LocationCategoryCodeEnum.BUILDING_POINT]: {
+    [TomLocationCategoryCodeEnum.BUILDING_POINT]: {
         icon: 'i-heroicons-building-office-2',
         description: 'Budynek (punkt adresowy)',
     },
-    [LocationCategoryCodeEnum.BUSINESS_PARK]: {
+    [TomLocationCategoryCodeEnum.BUSINESS_PARK]: {
         icon: 'i-heroicons-building-office',
         description: 'Park biznesowy',
     },
-    [LocationCategoryCodeEnum.CAFE_PUB]: {
+    [TomLocationCategoryCodeEnum.CAFE_PUB]: {
         icon: 'i-heroicons-cup-hot',
         description: 'Kawiarnia i pub',
     },
-    [LocationCategoryCodeEnum.CAMPING_GROUND]: {
+    [TomLocationCategoryCodeEnum.CAMPING_GROUND]: {
         icon: 'i-heroicons-home-modern',
         description: 'Kemping',
     },
-    [LocationCategoryCodeEnum.CAR_WASH]: {
+    [TomLocationCategoryCodeEnum.CAR_WASH]: {
         icon: 'i-heroicons-sparkles',
         description: 'Myjnia',
     },
-    [LocationCategoryCodeEnum.CASH_DISPENSER]: {
+    [TomLocationCategoryCodeEnum.CASH_DISPENSER]: {
         icon: 'i-heroicons-banknotes',
         description: 'Bankomat',
     },
-    [LocationCategoryCodeEnum.CASINO]: {
+    [TomLocationCategoryCodeEnum.CASINO]: {
         icon: 'i-heroicons-squares-2x2',
         description: 'Kasyno',
     },
-    [LocationCategoryCodeEnum.CINEMA]: {
+    [TomLocationCategoryCodeEnum.CINEMA]: {
         icon: 'i-heroicons-film',
         description: 'Kino',
     },
-    [LocationCategoryCodeEnum.CITY_CENTER]: {
+    [TomLocationCategoryCodeEnum.CITY_CENTER]: {
         icon: 'i-heroicons-building-office-2',
         description: 'Centrum miasta',
     },
-    [LocationCategoryCodeEnum.CLUB_ASSOCIATION]: {
+    [TomLocationCategoryCodeEnum.CLUB_ASSOCIATION]: {
         icon: 'i-heroicons-user-group',
         description: 'Klub / stowarzyszenie',
     },
-    [LocationCategoryCodeEnum.COLLEGE_UNIVERSITY]: {
+    [TomLocationCategoryCodeEnum.COLLEGE_UNIVERSITY]: {
         icon: 'i-heroicons-academic-cap',
         description: 'Uczelnia',
     },
-    [LocationCategoryCodeEnum.COMMERCIAL_BUILDING]: {
+    [TomLocationCategoryCodeEnum.COMMERCIAL_BUILDING]: {
         icon: 'i-heroicons-building-office',
         description: 'Budynek komercyjny',
     },
-    [LocationCategoryCodeEnum.COMMUNITY_CENTER]: {
+    [TomLocationCategoryCodeEnum.COMMUNITY_CENTER]: {
         icon: 'i-heroicons-user-group',
         description: 'Dom kultury / centrum społeczności',
     },
-    [LocationCategoryCodeEnum.COMPANY]: {
+    [TomLocationCategoryCodeEnum.COMPANY]: {
         icon: 'i-heroicons-building-office-2',
         description: 'Firma',
     },
-    [LocationCategoryCodeEnum.COURTHOUSE]: {
+    [TomLocationCategoryCodeEnum.COURTHOUSE]: {
         icon: 'i-heroicons-scale',
         description: 'Sąd',
     },
-    [LocationCategoryCodeEnum.CULTURAL_CENTER]: {
+    [TomLocationCategoryCodeEnum.CULTURAL_CENTER]: {
         icon: 'i-heroicons-building-library',
         description: 'Centrum kultury',
     },
-    [LocationCategoryCodeEnum.DENTIST]: {
+    [TomLocationCategoryCodeEnum.DENTIST]: {
         icon: 'i-heroicons-face-smile',
         description: 'Dentysta',
     },
-    [LocationCategoryCodeEnum.DEPARTMENT_STORE]: {
+    [TomLocationCategoryCodeEnum.DEPARTMENT_STORE]: {
         icon: 'i-heroicons-shopping-bag',
         description: 'Dom towarowy',
     },
-    [LocationCategoryCodeEnum.DOCTOR]: {
+    [TomLocationCategoryCodeEnum.DOCTOR]: {
         icon: 'i-heroicons-heart',
         description: 'Lekarz',
     },
-    [LocationCategoryCodeEnum.ELECTRIC_VEHICLE_STATION]: {
+    [TomLocationCategoryCodeEnum.ELECTRIC_VEHICLE_STATION]: {
         icon: 'i-heroicons-bolt',
         description: 'Ładowarka pojazdów elektrycznych',
     },
-    [LocationCategoryCodeEnum.EMBASSY]: {
+    [TomLocationCategoryCodeEnum.EMBASSY]: {
         icon: 'i-heroicons-flag',
         description: 'Ambasada',
     },
-    [LocationCategoryCodeEnum.EMERGENCY_MEDICAL_SERVICE]: {
+    [TomLocationCategoryCodeEnum.EMERGENCY_MEDICAL_SERVICE]: {
         icon: 'i-heroicons-truck',
         description: 'Pogotowie ratunkowe',
     },
-    [LocationCategoryCodeEnum.ENTERTAINMENT]: {
+    [TomLocationCategoryCodeEnum.ENTERTAINMENT]: {
         icon: 'i-heroicons-musical-note',
         description: 'Rozrywka',
     },
-    [LocationCategoryCodeEnum.EXCHANGE]: {
+    [TomLocationCategoryCodeEnum.EXCHANGE]: {
         icon: 'i-heroicons-currency-dollar',
         description: 'Kantor / giełda',
     },
-    [LocationCategoryCodeEnum.EXHIBITION_CONVENTION_CENTER]: {
+    [TomLocationCategoryCodeEnum.EXHIBITION_CONVENTION_CENTER]: {
         icon: 'i-heroicons-building-office-2',
         description: 'Centrum targowo-kongresowe',
     },
-    [LocationCategoryCodeEnum.FERRY_TERMINAL]: {
+    [TomLocationCategoryCodeEnum.FERRY_TERMINAL]: {
         icon: 'i-heroicons-globe-americas',
         description: 'Terminal promowy',
     },
-    [LocationCategoryCodeEnum.FIRE_STATION_BRIGADE]: {
+    [TomLocationCategoryCodeEnum.FIRE_STATION_BRIGADE]: {
         icon: 'i-heroicons-fire',
         description: 'Straż pożarna',
     },
-    [LocationCategoryCodeEnum.FRONTIER_CROSSING]: {
+    [TomLocationCategoryCodeEnum.FRONTIER_CROSSING]: {
         icon: 'i-heroicons-map',
         description: 'Przejście graniczne',
     },
-    [LocationCategoryCodeEnum.FUEL_FACILITIES]: {
+    [TomLocationCategoryCodeEnum.FUEL_FACILITIES]: {
         icon: 'i-heroicons-fire',
         description: 'Infrastruktura paliwowa',
     },
-    [LocationCategoryCodeEnum.GEOGRAPHIC_FEATURE]: {
+    [TomLocationCategoryCodeEnum.GEOGRAPHIC_FEATURE]: {
         icon: 'i-heroicons-globe-alt',
         description: 'Obiekt geograficzny',
     },
-    [LocationCategoryCodeEnum.GOLF_COURSE]: {
+    [TomLocationCategoryCodeEnum.GOLF_COURSE]: {
         icon: 'i-heroicons-flag',
         description: 'Pole golfowe',
     },
-    [LocationCategoryCodeEnum.GOVERNMENT_OFFICE]: {
+    [TomLocationCategoryCodeEnum.GOVERNMENT_OFFICE]: {
         icon: 'i-heroicons-building-library',
         description: 'Urząd',
     },
-    [LocationCategoryCodeEnum.HEALTH_CARE_SERVICE]: {
+    [TomLocationCategoryCodeEnum.HEALTH_CARE_SERVICE]: {
         icon: 'i-heroicons-heart',
         description: 'Opieka zdrowotna',
     },
-    [LocationCategoryCodeEnum.HELIPAD_HELICOPTER_LANDING]: {
+    [TomLocationCategoryCodeEnum.HELIPAD_HELICOPTER_LANDING]: {
         icon: 'i-heroicons-paper-airplane',
         description: 'Lądowisko dla helikopterów',
     },
-    [LocationCategoryCodeEnum.HOLIDAY_RENTAL]: {
+    [TomLocationCategoryCodeEnum.HOLIDAY_RENTAL]: {
         icon: 'i-heroicons-home',
         description: 'Nocleg wakacyjny',
     },
-    [LocationCategoryCodeEnum.HOSPITAL_POLYCLINIC]: {
+    [TomLocationCategoryCodeEnum.HOSPITAL_POLYCLINIC]: {
         icon: 'i-heroicons-heart',
         description: 'Szpital / przychodnia',
     },
-    [LocationCategoryCodeEnum.HOTEL_MOTEL]: {
+    [TomLocationCategoryCodeEnum.HOTEL_MOTEL]: {
         icon: 'i-heroicons-home-modern',
         description: 'Hotel / motel',
     },
-    [LocationCategoryCodeEnum.ICE_SKATING_RINK]: {
+    [TomLocationCategoryCodeEnum.ICE_SKATING_RINK]: {
         icon: 'i-heroicons-arrow-path',
         description: 'Lodowisko',
     },
-    [LocationCategoryCodeEnum.IMPORTANT_TOURIST_ATTRACTION]: {
+    [TomLocationCategoryCodeEnum.IMPORTANT_TOURIST_ATTRACTION]: {
         icon: 'i-heroicons-map-pin',
         description: 'Ważna atrakcja turystyczna',
     },
-    [LocationCategoryCodeEnum.INDUSTRIAL_BUILDING]: {
+    [TomLocationCategoryCodeEnum.INDUSTRIAL_BUILDING]: {
         icon: 'i-heroicons-building-storefront',
         description: 'Zakład przemysłowy',
     },
-    [LocationCategoryCodeEnum.LEISURE_CENTER]: {
+    [TomLocationCategoryCodeEnum.LEISURE_CENTER]: {
         icon: 'i-heroicons-sparkles',
         description: 'Centrum rekreacji',
     },
-    [LocationCategoryCodeEnum.LIBRARY]: {
+    [TomLocationCategoryCodeEnum.LIBRARY]: {
         icon: 'i-heroicons-book-open',
         description: 'Biblioteka',
     },
-    [LocationCategoryCodeEnum.MANUFACTURING_FACILITY]: {
+    [TomLocationCategoryCodeEnum.MANUFACTURING_FACILITY]: {
         icon: 'i-heroicons-cog-6-tooth',
         description: 'Zakład produkcyjny',
     },
-    [LocationCategoryCodeEnum.MARINA]: {
+    [TomLocationCategoryCodeEnum.MARINA]: {
         icon: 'i-heroicons-map',
         description: 'Marina jachtowa',
     },
-    [LocationCategoryCodeEnum.MARKET]: {
+    [TomLocationCategoryCodeEnum.MARKET]: {
         icon: 'i-heroicons-shopping-cart',
         description: 'Targ / rynek',
     },
-    [LocationCategoryCodeEnum.MEDIA_FACILITY]: {
+    [TomLocationCategoryCodeEnum.MEDIA_FACILITY]: {
         icon: 'i-heroicons-megaphone',
         description: 'Media',
     },
-    [LocationCategoryCodeEnum.MILITARY_INSTALLATION]: {
+    [TomLocationCategoryCodeEnum.MILITARY_INSTALLATION]: {
         icon: 'i-heroicons-shield-check',
         description: 'Obiekt wojskowy',
     },
-    [LocationCategoryCodeEnum.MOTORING_ORGANIZATION_OFFICE]: {
+    [TomLocationCategoryCodeEnum.MOTORING_ORGANIZATION_OFFICE]: {
         icon: 'i-heroicons-wrench-screwdriver',
         description: 'Biuro motoryzacyjne',
     },
-    [LocationCategoryCodeEnum.MOUNTAIN_PASS]: {
+    [TomLocationCategoryCodeEnum.MOUNTAIN_PASS]: {
         icon: 'i-heroicons-arrow-trending-up',
         description: 'Przełęcz',
     },
-    [LocationCategoryCodeEnum.MUSEUM]: {
+    [TomLocationCategoryCodeEnum.MUSEUM]: {
         icon: 'i-heroicons-building-library',
         description: 'Muzeum',
     },
-    [LocationCategoryCodeEnum.NATIVE_RESERVATION]: {
+    [TomLocationCategoryCodeEnum.NATIVE_RESERVATION]: {
         icon: 'i-heroicons-map',
         description: 'Terytorium rdzennych mieszkańców',
     },
-    [LocationCategoryCodeEnum.NIGHTLIFE]: {
+    [TomLocationCategoryCodeEnum.NIGHTLIFE]: {
         icon: 'i-heroicons-moon',
         description: 'Życie nocne',
     },
-    [LocationCategoryCodeEnum.NON_GOVERNMENTAL_ORGANIZATION]: {
+    [TomLocationCategoryCodeEnum.NON_GOVERNMENTAL_ORGANIZATION]: {
         icon: 'i-heroicons-hand-raised',
         description: 'Organizacja pozarządowa',
     },
-    [LocationCategoryCodeEnum.OPEN_PARKING_AREA]: {
+    [TomLocationCategoryCodeEnum.OPEN_PARKING_AREA]: {
         icon: 'i-heroicons-square-3-stack-3d',
         description: 'Parking otwarty',
     },
-    [LocationCategoryCodeEnum.OTHER]: {
+    [TomLocationCategoryCodeEnum.OTHER]: {
         icon: 'i-heroicons-question-mark-circle',
         description: 'Inne',
     },
-    [LocationCategoryCodeEnum.PARKING_GARAGE]: {
+    [TomLocationCategoryCodeEnum.PARKING_GARAGE]: {
         icon: 'i-heroicons-building-office-2',
         description: 'Parking wielopoziomowy',
     },
-    [LocationCategoryCodeEnum.PARK_RECREATION_AREA]: {
+    [TomLocationCategoryCodeEnum.PARK_RECREATION_AREA]: {
         icon: 'i-heroicons-sparkles',
         description: 'Park i rekreacja',
     },
-    [LocationCategoryCodeEnum.PETROL_STATION]: {
+    [TomLocationCategoryCodeEnum.PETROL_STATION]: {
         icon: 'i-heroicons-fire',
         description: 'Stacja paliw',
     },
-    [LocationCategoryCodeEnum.PHARMACY]: {
+    [TomLocationCategoryCodeEnum.PHARMACY]: {
         icon: 'i-heroicons-plus-circle',
         description: 'Apteka',
     },
-    [LocationCategoryCodeEnum.PLACE_OF_WORSHIP]: {
+    [TomLocationCategoryCodeEnum.PLACE_OF_WORSHIP]: {
         icon: 'i-heroicons-building-library',
         description: 'Miejsce kultu',
     },
-    [LocationCategoryCodeEnum.POLICE_STATION]: {
+    [TomLocationCategoryCodeEnum.POLICE_STATION]: {
         icon: 'i-heroicons-shield-check',
         description: 'Policja',
     },
-    [LocationCategoryCodeEnum.PORT_WAREHOUSE_FACILITY]: {
+    [TomLocationCategoryCodeEnum.PORT_WAREHOUSE_FACILITY]: {
         icon: 'i-heroicons-building-office',
         description: 'Port / magazyn',
     },
-    [LocationCategoryCodeEnum.POST_OFFICE]: {
+    [TomLocationCategoryCodeEnum.POST_OFFICE]: {
         icon: 'i-heroicons-envelope',
         description: 'Poczta',
     },
-    [LocationCategoryCodeEnum.PRIMARY_RESOURCE_UTILITY]: {
+    [TomLocationCategoryCodeEnum.PRIMARY_RESOURCE_UTILITY]: {
         icon: 'i-heroicons-bolt',
         description: 'Sieć energetyczna / media',
     },
-    [LocationCategoryCodeEnum.PRISON_CORRECTIONAL_FACILITY]: {
+    [TomLocationCategoryCodeEnum.PRISON_CORRECTIONAL_FACILITY]: {
         icon: 'i-heroicons-lock-closed',
         description: 'Zakład karny',
     },
-    [LocationCategoryCodeEnum.PUBLIC_AMENITY]: {
+    [TomLocationCategoryCodeEnum.PUBLIC_AMENITY]: {
         icon: 'i-heroicons-building-storefront',
         description: 'Udogodnienie publiczne',
     },
-    [LocationCategoryCodeEnum.PUBLIC_TRANSPORT_STOP]: {
+    [TomLocationCategoryCodeEnum.PUBLIC_TRANSPORT_STOP]: {
         icon: 'i-heroicons-map-pin',
         description: 'Przystanek komunikacji',
     },
-    [LocationCategoryCodeEnum.RAILWAY_STATION]: {
+    [TomLocationCategoryCodeEnum.RAILWAY_STATION]: {
         icon: 'i-heroicons-truck',
         description: 'Stacja kolejowa',
     },
-    [LocationCategoryCodeEnum.RENT_A_CAR_FACILITY]: {
+    [TomLocationCategoryCodeEnum.RENT_A_CAR_FACILITY]: {
         icon: 'i-heroicons-truck',
         description: 'Wypożyczalnia aut',
     },
-    [LocationCategoryCodeEnum.RENT_A_CAR_PARKING]: {
+    [TomLocationCategoryCodeEnum.RENT_A_CAR_PARKING]: {
         icon: 'i-heroicons-square-3-stack-3d',
         description: 'Parking wypożyczalni',
     },
-    [LocationCategoryCodeEnum.REPAIR_FACILITY]: {
+    [TomLocationCategoryCodeEnum.REPAIR_FACILITY]: {
         icon: 'i-heroicons-wrench-screwdriver',
         description: 'Warsztat',
     },
-    [LocationCategoryCodeEnum.RESEARCH_FACILITY]: {
+    [TomLocationCategoryCodeEnum.RESEARCH_FACILITY]: {
         icon: 'i-heroicons-beaker',
         description: 'Ośrodek badawczy',
     },
-    [LocationCategoryCodeEnum.RESIDENTIAL_ACCOMMODATION]: {
+    [TomLocationCategoryCodeEnum.RESIDENTIAL_ACCOMMODATION]: {
         icon: 'i-heroicons-home',
         description: 'Zabudowa mieszkaniowa',
     },
-    [LocationCategoryCodeEnum.RESTAURANT]: {
+    [TomLocationCategoryCodeEnum.RESTAURANT]: {
         icon: 'i-heroicons-building-storefront',
         description: 'Restauracja',
     },
-    [LocationCategoryCodeEnum.RESTAURANT_AREA]: {
+    [TomLocationCategoryCodeEnum.RESTAURANT_AREA]: {
         icon: 'i-heroicons-building-storefront',
         description: 'Strefa gastronomiczna',
     },
-    [LocationCategoryCodeEnum.REST_AREA]: {
+    [TomLocationCategoryCodeEnum.REST_AREA]: {
         icon: 'i-heroicons-map-pin',
         description: 'Miejsce odpoczynku',
     },
-    [LocationCategoryCodeEnum.SCENIC_PANORAMIC_VIEW]: {
+    [TomLocationCategoryCodeEnum.SCENIC_PANORAMIC_VIEW]: {
         icon: 'i-heroicons-eye',
         description: 'Punkt widokowy',
     },
-    [LocationCategoryCodeEnum.SCHOOL]: {
+    [TomLocationCategoryCodeEnum.SCHOOL]: {
         icon: 'i-heroicons-academic-cap',
         description: 'Szkoła',
     },
-    [LocationCategoryCodeEnum.SHOP]: {
+    [TomLocationCategoryCodeEnum.SHOP]: {
         icon: 'i-heroicons-shopping-bag',
         description: 'Sklep',
     },
-    [LocationCategoryCodeEnum.SHOPPING_CENTER]: {
+    [TomLocationCategoryCodeEnum.SHOPPING_CENTER]: {
         icon: 'i-heroicons-shopping-cart',
         description: 'Centrum handlowe',
     },
-    [LocationCategoryCodeEnum.SPORTS_CENTER]: {
+    [TomLocationCategoryCodeEnum.SPORTS_CENTER]: {
         icon: 'i-heroicons-trophy',
         description: 'Centrum sportu',
     },
-    [LocationCategoryCodeEnum.STADIUM]: {
+    [TomLocationCategoryCodeEnum.STADIUM]: {
         icon: 'i-heroicons-trophy',
         description: 'Stadion',
     },
-    [LocationCategoryCodeEnum.SWIMMING_POOL]: {
+    [TomLocationCategoryCodeEnum.SWIMMING_POOL]: {
         icon: 'i-heroicons-sparkles',
         description: 'Basen',
     },
-    [LocationCategoryCodeEnum.TENNIS_COURT]: {
+    [TomLocationCategoryCodeEnum.TENNIS_COURT]: {
         icon: 'i-heroicons-trophy',
         description: 'Kort tenisowy',
     },
-    [LocationCategoryCodeEnum.THEATER]: {
+    [TomLocationCategoryCodeEnum.THEATER]: {
         icon: 'i-heroicons-ticket',
         description: 'Teatr',
     },
-    [LocationCategoryCodeEnum.TOURIST_INFORMATION_OFFICE]: {
+    [TomLocationCategoryCodeEnum.TOURIST_INFORMATION_OFFICE]: {
         icon: 'i-heroicons-information-circle',
         description: 'Informacja turystyczna',
     },
-    [LocationCategoryCodeEnum.TRAFFIC_LIGHT]: {
+    [TomLocationCategoryCodeEnum.TRAFFIC_LIGHT]: {
         icon: 'i-heroicons-signal',
         description: 'Sygnalizacja świetlna',
     },
-    [LocationCategoryCodeEnum.TRAFFIC_SERVICE_CENTER]: {
+    [TomLocationCategoryCodeEnum.TRAFFIC_SERVICE_CENTER]: {
         icon: 'i-heroicons-wrench-screwdriver',
         description: 'Punkt obsługi ruchu',
     },
-    [LocationCategoryCodeEnum.TRAFFIC_SIGN]: {
+    [TomLocationCategoryCodeEnum.TRAFFIC_SIGN]: {
         icon: 'i-heroicons-exclamation-triangle',
         description: 'Znak drogowy',
     },
-    [LocationCategoryCodeEnum.TRAIL_SYSTEM]: {
+    [TomLocationCategoryCodeEnum.TRAIL_SYSTEM]: {
         icon: 'i-heroicons-map',
         description: 'Szlak turystyczny',
     },
-    [LocationCategoryCodeEnum.TRANSPORT_AUTHORITY_VEHICLE_REGISTRATION]: {
+    [TomLocationCategoryCodeEnum.TRANSPORT_AUTHORITY_VEHICLE_REGISTRATION]: {
         icon: 'i-heroicons-clipboard-document-check',
         description: 'Rejestracja pojazdów',
     },
-    [LocationCategoryCodeEnum.TRUCK_STOP]: {
+    [TomLocationCategoryCodeEnum.TRUCK_STOP]: {
         icon: 'i-heroicons-truck',
         description: 'Postój dla ciężarówek',
     },
-    [LocationCategoryCodeEnum.VETERINARIAN]: {
+    [TomLocationCategoryCodeEnum.VETERINARIAN]: {
         icon: 'i-heroicons-heart',
         description: 'Weterynarz',
     },
-    [LocationCategoryCodeEnum.WATER_SPORT]: {
+    [TomLocationCategoryCodeEnum.WATER_SPORT]: {
         icon: 'i-heroicons-globe-americas',
         description: 'Sporty wodne',
     },
-    [LocationCategoryCodeEnum.WEIGH_STATION]: {
+    [TomLocationCategoryCodeEnum.WEIGH_STATION]: {
         icon: 'i-heroicons-scale',
         description: 'Waga drogowa',
     },
-    [LocationCategoryCodeEnum.WELFARE_ORGANIZATION]: {
+    [TomLocationCategoryCodeEnum.WELFARE_ORGANIZATION]: {
         icon: 'i-heroicons-heart',
         description: 'Organizacja charytatywna',
     },
-    [LocationCategoryCodeEnum.WINERY]: {
+    [TomLocationCategoryCodeEnum.WINERY]: {
         icon: 'i-heroicons-beaker',
         description: 'Winnica',
     },
-    [LocationCategoryCodeEnum.ZOOS_ARBORETA_BOTANICAL_GARDEN]: {
+    [TomLocationCategoryCodeEnum.ZOOS_ARBORETA_BOTANICAL_GARDEN]: {
         icon: 'i-heroicons-face-smile',
         description: 'Zoo / ogród botaniczny',
     },
@@ -434,15 +434,15 @@ export const POI_CATEGORY_MAPPING: Record<LocationCategoryCodeEnum, { icon: stri
 
 
 export const DEFAULT_LOCATION_CATEGORIES = {
-    [FuzzySearchResultType.POI]: {
+    [TomSearchResultType.POI]: {
         'icon': 'i-heroicons-map-pin',
         'description': 'Lokalizacja',
     },
-    [FuzzySearchResultType.STREET]: {
+    [TomSearchResultType.STREET]: {
         'icon': 'i-heroicons-map',
         'description': 'Ulica',
     },
-    [FuzzySearchResultType.POINT_ADDRESS]: {
+    [TomSearchResultType.POINT_ADDRESS]: {
         'icon': 'i-heroicons-map-pin',
         'description': 'Dokładny adres',
     },
