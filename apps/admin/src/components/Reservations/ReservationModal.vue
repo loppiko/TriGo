@@ -41,10 +41,6 @@ const selectedDestination = ref<TomLocation | undefined>(props.reservation ? res
  */
 const form = ref<ReservationForm>((props.reservation) ? reservationToReservationForm(props.reservation) : createEmptyReservationForm())
 
-/** Separate string ref for the HTML date input (`YYYY-MM-DD`). */
-const pickupDateStr = ref(props.reservation?.pickupDate ? props.reservation.pickupDate.toISOString().split('T')[0] : '')
-const pickupTimeStr = ref(props.reservation?.pickupTime ? props.reservation.pickupTime.slice(0, 5) : '')
-
 const assignDriverModalOpen = ref(false)
 
 
@@ -81,9 +77,12 @@ watch(
             form.value = reservationToReservationForm(res)
             selectedPickup.value = reservationPickupLocationToTomLocation(res)
             selectedDestination.value = reservationDestinationLocationToTomLocation(res)
-            pickupDateStr.value = res.pickupDate.toISOString().split('T')[0]
-            pickupTimeStr.value = res.pickupTime.slice(0, 5)
+            return
         }
+
+        form.value = createEmptyReservationForm()
+        selectedPickup.value = undefined
+        selectedDestination.value = undefined
     },
 )
 
@@ -112,12 +111,12 @@ const resolvedDistance = computed<number>(() =>
 
 
 async function submit(close: () => void): Promise<void> {
-    const [year, month, day] = (pickupDateStr.value || '').split('-').map(Number)
+    const [year, month, day] = (form.value.pickupDateStr || '').split('-').map(Number)
     const pickupDate = year != null && month != null && day != null
         ? new Date(year, month - 1, day)
         : undefined
 
-    const normalizedTime = form.value.pickupTime?.length === 5 ? `${form.value.pickupTime}:00` : form.value.pickupTime
+    const normalizedTime = form.value.pickupTimeStr?.length === 5 ? `${form.value.pickupTimeStr}:00` : form.value.pickupTimeStr
 
     form.value.pickupLocation = resolvedPickup.value ?? undefined
     form.value.destination = resolvedDestination.value ?? undefined
@@ -208,14 +207,14 @@ async function submit(close: () => void): Promise<void> {
         <div class="grid gap-3 sm:grid-cols-2">
           <UFormField label="Data odbioru" name="pickupDate" required>
             <UInput
-              v-model="pickupDateStr"
+              v-model="form.pickupDateStr"
               type="date"
               class="w-full"
             />
           </UFormField>
           <UFormField label="Godzina odbioru" name="pickupTime" required>
             <UInput
-              v-model="pickupTimeStr"
+              v-model="form.pickupTimeStr"
               type="time"
               class="w-full"
             />

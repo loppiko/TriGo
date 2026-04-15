@@ -43,13 +43,38 @@ export function reservationFormToReservation(reservationForm: ReservationForm): 
 
 
 export function reservationToReservationForm(reservation: Reservation): ReservationForm {
-    return reservation
+    const form: ReservationForm = {
+        ...reservation,
+        clientDetails: {
+            ...reservation.clientDetails,
+        },
+        pickupLocation: {
+            ...reservation.pickupLocation,
+        },
+        destination: {
+            ...reservation.destination,
+        },
+        pickupDateStr: reservation.pickupDate.toISOString().split('T')[0] ?? '',
+        pickupTimeStr: reservation.pickupTime.slice(0, 5),
+    }
+
+    if (form.assignedDriver) {
+        form.assignedDriver = {
+            id: form.assignedDriver.id,
+            name: form.assignedDriver.name,
+            phoneNumber: form.assignedDriver.phoneNumber,
+        }
+    }
+
+    return form
 }
 
 
 export function createEmptyReservationForm(): ReservationForm {
     return {
         distance: 0,
+        pickupDateStr: '',
+        pickupTimeStr: '',
         pickupType: PickupTypeEnum.STANDARD,
         clientDetails: {
             firstName: '',

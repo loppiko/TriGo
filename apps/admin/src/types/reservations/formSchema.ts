@@ -19,6 +19,8 @@ export const reservationFormSchema = z.object({
     destination: locationSchema.optional(),
     distance: z.number().optional(),
 
+    pickupDateStr: z.string().optional(),
+    pickupTimeStr: z.string().optional(),
     pickupDate: z.date().optional(),
     pickupTime: z.iso.time().optional(),
     pickupType: z.enum(PickupTypeEnum),

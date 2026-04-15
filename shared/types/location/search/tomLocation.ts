@@ -23,18 +23,18 @@ export function reservationPickupLocationToTomLocation(reservation: Reservation)
 
 
 export function reservationDestinationLocationToTomLocation(reservation: Reservation): TomLocation {
-    const pickupLocation = reservation.pickupLocation
-    const pickupLocationName = pickupLocation.name
+    const destinationLocation = reservation.destination
+    const destinationLocationName = destinationLocation.name
 
-    const type = (pickupLocationName && pickupLocationName in POI_CATEGORY_MAPPING) ? TomSearchResultType.POI : TomSearchResultType.POINT_ADDRESS
-    const category = (pickupLocationName && pickupLocationName in POI_CATEGORY_MAPPING) ? POI_CATEGORY_MAPPING[pickupLocationName as TomLocationCategoryCodeEnum] : DEFAULT_LOCATION_CATEGORIES[TomSearchResultType.POINT_ADDRESS]
+    const type = (destinationLocationName && destinationLocationName in POI_CATEGORY_MAPPING) ? TomSearchResultType.POI : TomSearchResultType.POINT_ADDRESS
+    const category = (destinationLocationName && destinationLocationName in POI_CATEGORY_MAPPING) ? POI_CATEGORY_MAPPING[destinationLocationName as TomLocationCategoryCodeEnum] : DEFAULT_LOCATION_CATEGORIES[TomSearchResultType.POINT_ADDRESS]
 
     return {
         type,
         score: 1,
         id: "",
         dist: reservation.distance,
-        ...pickupLocation,
+        ...destinationLocation,
         processedCategory: category
     }
 }
