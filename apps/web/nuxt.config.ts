@@ -27,6 +27,9 @@ export default defineNuxtConfig({
                 rectangleGeobias: process.env.NUXT_PUBLIC_TOMTOM_RECTANGLE_GEOBIAS,
                 fuzzySearchResponsesLimit: process.env.NUXT_PUBLIC_TOMTOM_FUZZY_SEARCH_RESPONSES_LIMIT,
             },
+            mapbox: {
+                accessToken: process.env.NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+            },
         },
     },
 

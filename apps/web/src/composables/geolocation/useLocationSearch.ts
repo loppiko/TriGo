@@ -73,9 +73,6 @@ function shouldRunFuzzySearch(query: string): boolean {
 }
 
 
-
-
-
 /**
  * Removes fuzzy-search rows that should not appear in the list: TomTom `type` values
  * annotated with `@filtered` in {@link FuzzySearchResultType}, and any address outside

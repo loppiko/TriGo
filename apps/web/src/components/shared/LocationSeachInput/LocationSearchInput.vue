@@ -52,7 +52,7 @@ const toChoosenLocation: Ref<PlaceCoordinates | null> = ref(props.toModelValue?.
 const fromLocationSearch = useLocationSearch(fromSearchState, toChoosenLocation)
 const toLocationSearch = useLocationSearch(toSearchState, fromChoosenLocation)
 
-const toInputDisabled = computed(() => fromChoosenLocation.value === null)
+const toInputActive = computed(() => fromChoosenLocation.value !== null)
 
 
 watch(
@@ -102,7 +102,7 @@ const showFromPanel = computed(() =>
 
 
 const showToPanel = computed(() =>
-    toHasFocus.value && toQuery.value.trim().length > 0 && !toInputDisabled.value,
+    toHasFocus.value && toQuery.value.trim().length > 0 && toInputActive.value,
 )
 
 
@@ -215,7 +215,7 @@ async function beginEditFrom() {
  * Switches „dokąd” from compact preview back to search field and focuses it.
  */
 async function beginEditTo() {
-    if (toInputDisabled.value) {
+    if (toInputActive.value) {
         return
     }
 
@@ -278,6 +278,7 @@ async function beginEditTo() {
             :model-value="fromQuery"
             :placeholder="placeholder"
             :icon="icon"
+            size="xl"
             class="w-full"
             @update:model-value="handleFromQueryInput"
             @focus="fromHasFocus = true"
@@ -363,13 +364,13 @@ async function beginEditTo() {
       </div>
     </div>
 
-    <div class="flex items-center gap-3 px-2">
+    <div v-if="fromChoosenLocation" class="flex items-center gap-3 px-2">
       <div class="h-px flex-1 bg-gray-200 dark:bg-dark-600" />
       <UIcon name="i-lucide-arrow-down-up" class="size-4 text-gray-300 dark:text-gray-600" />
       <div class="h-px flex-1 bg-gray-200 dark:bg-dark-600" />
     </div>
 
-    <div>
+    <div v-show="toInputActive">
       <label
         v-if="toLabel"
         class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400"
@@ -378,7 +379,7 @@ async function beginEditTo() {
       </label>
       <div class="relative">
         <div
-          v-if="toModelValue && !toHasFocus && !toInputDisabled"
+          v-if="toModelValue && !toHasFocus && toInputActive"
           class="flex w-full cursor-pointer gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:hover:bg-dark-700"
           role="button"
           tabindex="0"
@@ -419,14 +420,15 @@ async function beginEditTo() {
         </div>
 
         <div
-          v-show="!toModelValue || toHasFocus || toInputDisabled"
+          v-show="(!toModelValue || toHasFocus) && toInputActive"
           ref="toInputContainerRef"
         >
           <UInput
             :model-value="toQuery"
             :placeholder="toPlaceholder"
             :icon="toIcon"
-            :disabled="toInputDisabled"
+            :disabled="toInputActive"
+            size="lg"
             class="w-full"
             @update:model-value="handleToQueryInput"
             @focus="toHasFocus = true"

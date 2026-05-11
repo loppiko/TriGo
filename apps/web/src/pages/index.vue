@@ -12,9 +12,10 @@ import { TomLocationToPlace } from '#shared/types/location/search/tomLocation'
 import DateTimePickup, { parseHtmlDateToLocalDate, phase2Schema } from '~/components/pages/reservation/DateTimePickup.vue'
 import ContactData, { phase3Schema } from '~/components/pages/reservation/ContactData.vue'
 import ReservationSummary from '~/components/pages/reservation/ReservationSummary.vue'
+import Map from '~/components/shared/Map/Map.vue'
 
 
-definePageMeta({ layout: 'home' })
+definePageMeta({ layout: 'reservation' })
 
 const { createReservation } = useReservations()
 
@@ -88,6 +89,14 @@ function buildReservationFromWizardState(): Result<Reservation> {
     return { success: true, data: parsed.data }
 }
 
+
+watch(pickupLocation, (newVal) => {
+    console.log('pickupLocation changed:', newVal)
+})
+
+watch(destination, (newVal) => {
+    console.log('destination changed:', newVal)
+})
 
 const phase1Schema = z.object({
     pickupLocation: TomLocationSchema,
@@ -246,21 +255,22 @@ async function submitReservation() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-green-50/40 to-white dark:from-dark-950 dark:to-dark-900">
-    <div class="min-h-screen flex flex-col max-w-md mx-auto px-5 relative">
+  <div class="relative h-[calc(100dvh-3.55rem)] overflow-hidden">
+    <div class="absolute inset-0 z-0">
+      <Map />
+    </div>
+    <div class="flex flex-col max-w-[800px] mx-auto px-5 relative z-10 overflow-hidden">
       <!-- Success screen -->
       <Transition name="success" mode="out-in">
         <div
           v-if="showSuccess"
           key="success"
-          class="min-h-screen flex flex-col relative"
+          class="h-full flex flex-col relative"
         >
           <!-- Logo at top -->
           <div class="logo-container logo-top text-center">
             <div class="inline-flex items-center gap-3 mb-1">
-              <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-green-600 flex items-center justify-center shadow-lg shadow-primary/20">
-                <UIcon name="i-lucide-map-pin" class="size-5 text-white" />
-              </div>
+              <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-green-600 flex items-center justify-center shadow-lg shadow-primary/20"/>
               <span class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                 Tri<span class="text-primary">Go</span>
               </span>
@@ -300,26 +310,7 @@ async function submitReservation() {
         </div>
 
         <!-- Form flow -->
-        <div v-else key="form" class="min-h-screen flex flex-col relative">
-          <!-- Logo - position animates: centered in step 1, top in step 2+ -->
-          <div
-            class="logo-container text-center"
-            :class="step === 1 ? 'logo-centered' : 'logo-top'"
-          >
-            <div class="inline-flex items-center gap-3 mb-1">
-              <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-green-600 flex items-center justify-center shadow-lg shadow-primary/20">
-                <UIcon name="i-lucide-map-pin" class="size-5 text-white" />
-              </div>
-              <span class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                Tri<span class="text-primary">Go</span>
-              </span>
-            </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Zarezerwuj przejazd w Trójmieście
-            </p>
-          </div>
-
-          <!-- Spacer for logo when at top (step 2+) -->
+        <div v-else key="form" class="h-full flex flex-col relative">
           <div
             v-if="step > 1"
             class="shrink-0 h-[100px]"
@@ -344,19 +335,11 @@ async function submitReservation() {
           </Transition>
 
           <!-- Current section - centered -->
-          <div class="flex-1 flex flex-col items-center justify-center min-h-0 pb-12 w-full">
+          <div class="flex-1 flex flex-col min-h-0 pb-12">
             <Transition name="phase" mode="out-in">
               <!-- Phase 1: Place -->
               <div v-if="step === 1" key="phase1" class="w-full py-4">
                 <section class="text-center">
-                  <div class="flex flex-col items-center mb-4">
-                    <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
-                      1
-                    </div>
-                    <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Skąd i dokąd?
-                    </p>
-                  </div>
                   <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
                     <LocationSearchInput
                       v-model:from-model-value="pickupLocation"
@@ -374,6 +357,7 @@ async function submitReservation() {
                   </div>
                   <div class="flex flex-col gap-2 mt-4">
                     <UButton
+                      v-if="false"
                       block
                       :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
                       @click="validateAndAdvance"
