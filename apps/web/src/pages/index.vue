@@ -4,11 +4,14 @@ import type { Result } from '#shared/types/core'
 import { TomLocationSchema, type TomLocation } from '#shared/types/location/search/schema'
 import { reservationSchema, type Reservation } from '#shared/types/reservations/schema'
 import { errorNotification, infoNotification } from '~/utils/notifications/toast'
-import LocationSearchInput from '~/components/LocationSeachInput/LocationSearchInput.vue'
-import { PickupTypeEnum, ReservationStatus } from '#shared/types/reservations/enums'
+import LocationSearchInput from '~/components/shared/LocationSeachInput/LocationSearchInput.vue'
+import { ReservationStatus } from '#shared/types/reservations/enums'
+import type { PickupTypeEnum } from '#shared/types/reservations/enums'
 import { useReservations } from '~/composables/database/useReservations'
 import { TomLocationToPlace } from '#shared/types/location/search/tomLocation'
-import { pickupTypeOptions } from '~/utils/ui/reservations'
+import DateTimePickup, { parseHtmlDateToLocalDate, phase2Schema } from '~/components/pages/reservation/DateTimePickup.vue'
+import ContactData, { phase3Schema } from '~/components/pages/reservation/ContactData.vue'
+import ReservationSummary from '~/components/pages/reservation/ReservationSummary.vue'
 
 
 definePageMeta({ layout: 'home' })
@@ -35,53 +38,6 @@ const isReservationSubmitting = ref(false)
 
 
 /**
- * Parses an HTML `input[type="date"]` value (`YYYY-MM-DD`) into a local calendar date.
- */
-function parseHtmlDateToLocalDate(isoDate: string): Date | null {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
-        return null
-    }
-
-    const parts = isoDate.split('-').map(Number)
-    const year = parts[0]
-    const month = parts[1]
-    const day = parts[2]
-    if (year == null || month == null || day == null) {
-        return null
-    }
-    return new Date(year, month - 1, day)
-}
-
-
-/**
- * Returns local midnight for the given instant’s calendar day (same interpretation as HTML date inputs).
- */
-function startOfLocalCalendarDay(d: Date): Date {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-}
-
-
-/**
- * Combines a local calendar date (from `type="date"`) with an ISO time string (`type="time"`, np. `14:30`).
- */
-function buildLocalPickupAt(rideDate: Date, rideTime: string): Date {
-    const parts = rideTime.trim().split(':').map((x) => Number(x))
-    const hours = parts[0] ?? 0
-    const minutes = parts[1] ?? 0
-    const seconds = parts[2] ?? 0
-    return new Date(
-        rideDate.getFullYear(),
-        rideDate.getMonth(),
-        rideDate.getDate(),
-        hours,
-        minutes,
-        seconds,
-        0,
-    )
-}
-
-
-/**
  * Builds a reservation from current wizard state and validates it against reservationSchema.
  */
 function buildReservationFromWizardState(): Result<Reservation> {
@@ -92,16 +48,6 @@ function buildReservationFromWizardState(): Result<Reservation> {
     if (!pickup || !dest || type == null) {
         console.error('[buildReservationFromWizardState] Missing required wizard fields')
         return { success: false, error: 'Missing required wizard fields' }
-    }
-
-    const phase2Parsed = phase2Schema.safeParse({
-        rideDate: rideDate.value,
-        rideTime: rideTime.value,
-        pickupType: pickupType.value,
-    })
-    if (!phase2Parsed.success) {
-        console.error('[buildReservationFromWizardState] Phase 2 validation failed:', phase2Parsed.error)
-        return { success: false, error: 'Phase 2 validation failed' }
     }
 
     const pickupDate = parseHtmlDateToLocalDate(rideDate.value.trim())
@@ -152,63 +98,6 @@ const phase1Schema = z.object({
 })
 
 
-/**
- * `UInput` `type="date"` supplies `YYYY-MM-DD` strings; we parse to the same local {@link Date} used for {@link reservationSchema} `pickupDate`.
- */
-const phase2RideDateSchema = z
-    .string()
-    .trim()
-    .min(1, 'Wybierz datę przejazdu')
-    .refine((s) => parseHtmlDateToLocalDate(s) !== null, { message: 'Wybierz datę przejazdu' })
-    .transform((s) => parseHtmlDateToLocalDate(s)!)
-
-
-const phase2Schema = z.object({
-    rideDate: phase2RideDateSchema,
-    rideTime: z.iso.time().min(1, 'Wybierz godzinę przejazdu'),
-    pickupType: z.enum(PickupTypeEnum),
-}).superRefine((data, ctx) => {
-    const pickupAt = buildLocalPickupAt(data.rideDate, data.rideTime)
-    const now = new Date()
-    if (pickupAt.getTime() >= now.getTime()) {
-        return
-    }
-
-    const todayStart = startOfLocalCalendarDay(now)
-    const selectedStart = startOfLocalCalendarDay(data.rideDate)
-    if (selectedStart.getTime() < todayStart.getTime()) {
-        ctx.addIssue({
-            code: "custom",
-            message: 'Data nie może być z przeszłości.',
-            path: ['rideDate'],
-        })
-    }
-    else if (selectedStart.getTime() === todayStart.getTime()) {
-        ctx.addIssue({
-            code: "custom",
-            message: 'Godzina nie może być w przeszłości.',
-            path: ['rideTime'],
-        })
-    }
-    else {
-        ctx.addIssue({
-            code: "custom",
-            message: 'Wybrany termin już minął.',
-            path: ['rideDate'],
-        })
-    }
-})
-
-
-const phase3Schema = z.object({
-    firstName: z.string().min(1, 'Podaj imię').max(100, 'Imię jest za długie'),
-    lastName: z.string().min(1, 'Podaj nazwisko').max(100, 'Nazwisko jest za długie'),
-    phoneNumber: z.string()
-        .min(9, 'Numer telefonu musi mieć co najmniej 9 cyfr')
-        .regex(/^[\d\s+-]+$/, 'Podaj prawidłowy numer telefonu'),
-})
-
-
 const phaseTitles: Record<number, string> = {
     1: 'Skąd i dokąd?',
     2: 'Kiedy i jak?',
@@ -233,7 +122,11 @@ const isStep1Valid = computed(() =>
 
 
 const isStep2Valid = computed(() =>
-    parse2Step().success,
+    phase2Schema.safeParse({
+        rideDate: rideDate.value,
+        rideTime: rideTime.value,
+        pickupType: pickupType.value,
+    }).success,
 )
 
 
@@ -252,58 +145,6 @@ const steps4Visited = ref<boolean>(false)
 const allStepsValidAndLastVisited = computed(() =>
     isStep1Valid.value && isStep2Valid.value && isStep3Valid.value && steps4Visited.value,
 )
-
-
-function parse2Step() {
-    return phase2Schema.safeParse({
-        rideDate: rideDate.value,
-        rideTime: rideTime.value,
-        pickupType: pickupType.value,
-    })
-}
-
-
-const phase2Parse = computed(() => parse2Step())
-
-
-const showDateError = computed(() => {
-    if (!rideDate.value) {
-        return false
-    }
-    if (phase2Parse.value.success) {
-        return false
-    }
-    return phase2Parse.value.error.issues.some((issue) => issue.path[0] === 'rideDate')
-})
-
-
-const showTimeError = computed(() => {
-    if (!rideTime.value) {
-        return false
-    }
-    if (phase2Parse.value.success) {
-        return false
-    }
-    return phase2Parse.value.error.issues.some((issue) => issue.path[0] === 'rideTime')
-})
-
-
-/**
- * Returns the first Zod error message for a phase-2 field (inline text under the input).
- */
-function phase2FieldMessage(pathKey: 'rideDate' | 'rideTime'): string {
-    if (pathKey === 'rideDate' && !rideDate.value) {
-        return ''
-    }
-    if (pathKey === 'rideTime' && !rideTime.value) {
-        return ''
-    }
-    const parsed = phase2Parse.value
-    if (parsed.success) {
-        return ''
-    }
-    return parsed.error.issues.find((issue) => issue.path[0] === pathKey)?.message ?? ''
-}
 
 
 function goToStep(targetStep: number) {
@@ -392,44 +233,15 @@ async function submitReservation() {
 
     isReservationSubmitting.value = true
     const result = await createReservation(built.data)
-    
+
     if (!result.success) {
         errorNotification(RESERVATION_INTERNAL_ERROR_TITLE, RESERVATION_INTERNAL_ERROR_DESCRIPTION)
         isReservationSubmitting.value = false
         return
     }
-    
+
     showSuccess.value = true
     isReservationSubmitting.value = false
-}
-
-
-
-/**
- * Single-line label for summary UI (TomTom processed location).
- */
-function locationDisplayLabel(location: TomLocation | undefined): string {
-    if (!location) {
-        return ''
-    }
-
-    return location.poi?.name?.trim()
-        ?? location.address.freeformAddress?.trim()
-        ?? [location.address.municipality]
-            .filter((value): value is string => Boolean(value))
-            .join(', ')
-        ?? '—'
-}
-
-
-const formatDate = (dateStr: string) => {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString('pl-PL', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-    })
 }
 </script>
 
@@ -578,283 +390,45 @@ const formatDate = (dateStr: string) => {
                 </section>
               </div>
 
-              <!-- Phase 2: Date/Time & Pickup Type -->
-              <div v-else-if="step === 2" key="phase2" class="w-full py-4">
-                <section class="text-center">
-                  <div class="flex flex-col items-center mb-4">
-                    <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
-                      2
-                    </div>
-                    <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Kiedy i jak?
-                    </p>
-                  </div>
-                  <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 space-y-5 shadow-sm">
-                    <div class="flex flex-col gap-3">
-                      <div>
-                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Data</label>
-                        <UInput
-                          v-model="rideDate"
-                          type="date"
-                          icon="i-lucide-calendar"
-                          class="w-full"
-                          :color="showDateError ? 'error' : 'primary'"
-                          :highlight="showDateError"
-                        />
-                        <p
-                          v-show="showDateError"
-                          class="text-left text-xs text-error mt-1.5"
-                        >
-                          {{ phase2FieldMessage('rideDate') }}
-                        </p>
-                      </div>
-                      <div>
-                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Godzina</label>
-                        <UInput
-                          v-model="rideTime"
-                          type="time"
-                          icon="i-lucide-clock"
-                          class="w-full"
-                          :color="showTimeError ? 'error' : 'primary'"
-                          :highlight="showTimeError"
-                        />
-                        <p
-                          v-show="showTimeError"
-                          class="text-left text-xs text-error mt-1.5"
-                        >
-                          {{ phase2FieldMessage('rideTime') }}
-                        </p>
-                      </div>
-                    </div>
+              <DateTimePickup
+                v-else-if="step === 2"
+                key="phase2"
+                v-model:ride-date="rideDate"
+                v-model:ride-time="rideTime"
+                v-model:pickup-type="pickupType"
+                :all-steps-valid-and-last-visited="allStepsValidAndLastVisited"
+                @advance="validateAndAdvance"
+                @go-to-summary="goToStep(4)"
+              />
 
-                    <div>
-                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 block">
-                        Forma odbioru
-                      </label>
-                      <div class="space-y-3">
-                        <button
-                          v-for="option in pickupTypeOptions"
-                          :key="option.value"
-                          class="w-full text-left p-4 rounded-xl border-2 transition-all duration-300 active:scale-[0.98]"
-                          :class="pickupType === option.value
-                            ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm shadow-primary/10'
-                            : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'"
-                          @click="pickupType = option.value"
-                        >
-                          <div class="flex items-start gap-3">
-                            <div
-                              class="size-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
-                              :class="pickupType === option.value
-                                ? 'bg-primary/10 text-primary'
-                                : 'bg-gray-100 dark:bg-dark-700 text-gray-400'"
-                            >
-                              <UIcon :name="option.icon" class="size-5" />
-                            </div>
-                            <div class="flex-1 min-w-0">
-                              <p class="font-bold text-sm text-gray-900 dark:text-white">{{ option.title }}</p>
-                              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
-                                {{ option.description }}
-                              </p>
-                            </div>
-                            <Transition name="check">
-                              <UIcon
-                                v-if="pickupType === option.value"
-                                name="i-lucide-circle-check"
-                                class="size-5 text-primary shrink-0 mt-0.5"
-                              />
-                            </Transition>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex flex-col gap-2 mt-4">
-                    <UButton
-                      block
-                      :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
-                      @click="validateAndAdvance"
-                    >
-                      Dalej
-                    </UButton>
-                    <UButton v-if="allStepsValidAndLastVisited" block @click="goToStep(4)">
-                      Zobacz podsumowanie
-                    </UButton>
-                  </div>
-                </section>
-              </div>
+              <ContactData
+                v-else-if="step === 3"
+                key="phase3"
+                v-model:first-name="firstName"
+                v-model:last-name="lastName"
+                v-model:phone-number="phoneNumber"
+                :all-steps-valid-and-last-visited="allStepsValidAndLastVisited"
+                @advance="validateAndAdvance"
+                @go-to-summary="goToStep(4)"
+              />
 
-              <!-- Phase 3: Contact Details -->
-              <div v-else-if="step === 3" key="phase3" class="w-full py-4">
-                <section class="text-center">
-                  <div class="flex flex-col items-center mb-4">
-                    <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
-                      3
-                    </div>
-                    <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Dane kontaktowe
-                    </p>
-                  </div>
-                  <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4 shadow-sm">
-                    <div>
-                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Imię</label>
-                      <UInput v-model="firstName" placeholder="np. Jan" icon="i-lucide-user" class="w-full" />
-                    </div>
-                    <div>
-                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Nazwisko</label>
-                      <UInput v-model="lastName" placeholder="np. Kowalski" icon="i-lucide-user" class="w-full" />
-                    </div>
-                    <div>
-                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Numer telefonu</label>
-                      <UInput v-model="phoneNumber" type="tel" placeholder="np. 123 456 789" icon="i-lucide-phone" class="w-full" />
-                    </div>
-                  </div>
-                  <div class="flex flex-col gap-2 mt-4">
-                    <UButton
-                      block
-                      :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
-                      @click="validateAndAdvance"
-                    >
-                      Dalej
-                    </UButton>
-                    <UButton v-if="allStepsValidAndLastVisited" block @click="goToStep(4)">
-                      Zobacz podsumowanie
-                    </UButton>
-                  </div>
-                </section>
-              </div>
-
-              <!-- Phase 4: Summary -->
-              <div v-else key="phase4" class="w-full py-4 pb-8">
-                <section class="text-center">
-                  <div class="flex flex-col items-center mb-4">
-                    <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
-                      4
-                    </div>
-                    <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Podsumowanie
-                    </p>
-                  </div>
-
-                  <div class="rounded-2xl bg-gradient-to-br from-white/90 to-green-50/60 dark:from-dark-800/90 dark:to-primary/5 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm text-left">
-                    <div class="space-y-4">
-                      <div class="flex items-start gap-3">
-                        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <UIcon name="i-lucide-map-pin" class="size-5 text-primary" />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Trasa</p>
-                          <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ locationDisplayLabel(pickupLocation) }}
-                          </p>
-                          <div class="flex items-center gap-1.5 mt-0.5">
-                            <UIcon name="i-lucide-arrow-right" class="size-3 text-gray-400 shrink-0" />
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                              {{ locationDisplayLabel(destination) }}
-                            </p>
-                          </div>
-                        </div>
-                        <UButton
-                          icon="i-lucide-pencil"
-                          variant="soft"
-                          color="primary"
-                          size="sm"
-                          aria-label="Edytuj trasę"
-                          class="shrink-0"
-                          @click="goToStep(1)"
-                        />
-                      </div>
-
-                      <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-                      <div class="flex items-start gap-3">
-                        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <UIcon name="i-lucide-calendar" class="size-5 text-primary" />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Termin</p>
-                          <p class="text-sm font-semibold text-gray-900 dark:text-white capitalize">
-                            {{ formatDate(rideDate) }}
-                          </p>
-                          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            Godzina: {{ rideTime }}
-                          </p>
-                        </div>
-                        <UButton
-                          icon="i-lucide-pencil"
-                          variant="soft"
-                          color="primary"
-                          size="sm"
-                          aria-label="Edytuj termin"
-                          class="shrink-0"
-                          @click="goToStep(2)"
-                        />
-                      </div>
-
-                      <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-                      <div class="flex items-start gap-3">
-                        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <UIcon
-                            :name="pickupType === 'meet-greet' ? 'i-lucide-handshake' : 'i-lucide-car'"
-                            class="size-5 text-primary"
-                          />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Forma odbioru</p>
-                          <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ pickupType === 'meet-greet' ? 'Meet & Greet' : 'Standard Pickup' }}
-                          </p>
-                        </div>
-                        <UButton
-                          icon="i-lucide-pencil"
-                          variant="soft"
-                          color="primary"
-                          size="sm"
-                          aria-label="Edytuj formę odbioru"
-                          class="shrink-0"
-                          @click="goToStep(2)"
-                        />
-                      </div>
-
-                      <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-                      <div class="flex items-start gap-3">
-                        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <UIcon name="i-lucide-user" class="size-5 text-primary" />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Dane kontaktowe</p>
-                          <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ firstName }} {{ lastName }}
-                          </p>
-                          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {{ phoneNumber }}
-                          </p>
-                        </div>
-                        <UButton
-                          icon="i-lucide-pencil"
-                          variant="soft"
-                          color="primary"
-                          size="sm"
-                          aria-label="Edytuj dane kontaktowe"
-                          class="shrink-0"
-                          @click="goToStep(3)"
-                        />
-                      </div>
-                    </div>
-                    <UButton
-                      block
-                      size="xl"
-                      class="mt-6"
-                      :loading="isReservationSubmitting"
-                      :disabled="isReservationSubmitting"
-                      @click="submitReservation"
-                    >
-                      Zarezerwuj przejazd
-                    </UButton>
-                  </div>
-                </section>
-              </div>
+              <ReservationSummary
+                v-else
+                key="phase4"
+                :pickup-location="pickupLocation"
+                :destination="destination"
+                :ride-date="rideDate"
+                :ride-time="rideTime"
+                :pickup-type="pickupType"
+                :first-name="firstName"
+                :last-name="lastName"
+                :phone-number="phoneNumber"
+                :is-reservation-submitting="isReservationSubmitting"
+                @edit-route="goToStep(1)"
+                @edit-schedule="goToStep(2)"
+                @edit-contact="goToStep(3)"
+                @submit-reservation="submitReservation"
+              />
             </Transition>
           </div>
         </div>
@@ -907,15 +481,6 @@ const formatDate = (dateStr: string) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-.check-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.check-enter-from {
-  opacity: 0;
-  transform: scale(0);
 }
 
 /* Success screen */
