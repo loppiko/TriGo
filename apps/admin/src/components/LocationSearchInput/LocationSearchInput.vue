@@ -30,6 +30,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     (event: 'update:fromModelValue' | 'update:toModelValue', value: TomLocation | undefined): void
     (event: 'from-location-selected' | 'to-location-selected', value: TomLocation): void
+    (event: 'distance-updated', value: number): void
 }>()
 
 
@@ -46,8 +47,9 @@ const fromInputContainerRef = ref<HTMLElement | null>(null)
 const toInputContainerRef = ref<HTMLElement | null>(null)
 
 const fromChoosenLocation: Ref<PlaceCoordinates | null> = ref(props.fromModelValue?.position ?? null)
+const toChoosenLocation: Ref<PlaceCoordinates | null> = ref(props.toModelValue?.position ?? null)
 
-const fromLocationSearch = useLocationSearch(fromSearchState, ref(null))
+const fromLocationSearch = useLocationSearch(fromSearchState, toChoosenLocation)
 const toLocationSearch = useLocationSearch(toSearchState, fromChoosenLocation)
 
 const toInputDisabled = computed(() => fromChoosenLocation.value === null)
@@ -147,6 +149,11 @@ function handleFromSelectResult(item: TomLocation) {
         lat: item.position.lat,
         lon: item.position.lon,
     }
+
+    if (toChoosenLocation.value && !isNaN(Number(item.dist))) {
+        emit('distance-updated', Number(item.dist))
+    }
+
     emit('update:fromModelValue', item)
     emit('from-location-selected', item)
 }
@@ -155,6 +162,11 @@ function handleFromSelectResult(item: TomLocation) {
 function handleToSelectResult(item: TomLocation) {
     toQuery.value = item.poi?.name || item.address.freeformAddress
     toHasFocus.value = false
+
+    if (fromChoosenLocation.value && !isNaN(Number(item.dist))) {
+        emit('distance-updated', Number(item.dist))
+    }
+
     emit('update:toModelValue', item)
     emit('to-location-selected', item)
 }

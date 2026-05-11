@@ -23,6 +23,7 @@
   "devDependencies": {
     "@iconify-json/logos": "^1.2.10",
     "@iconify-json/simple-icons": "^1.2.74",
+    "@iconify-json/lucide": "^1.2.101",
     "@nuxt/eslint": "^1.15.2",
     "@types/node": "^22",
     "@unhead/vue": "^2.0.10",

@@ -21,6 +21,7 @@ const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
 
 const pickupLocation = ref<TomLocation | undefined>()
 const destination = ref<TomLocation | undefined>()
+const distance = ref<number>(0)
 const rideDate = ref('')
 const rideTime = ref('')
 const pickupType = ref<PickupTypeEnum | null>(null)
@@ -53,6 +54,34 @@ function parseHtmlDateToLocalDate(isoDate: string): Date | null {
 
 
 /**
+ * Returns local midnight for the given instant’s calendar day (same interpretation as HTML date inputs).
+ */
+function startOfLocalCalendarDay(d: Date): Date {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
+}
+
+
+/**
+ * Combines a local calendar date (from `type="date"`) with an ISO time string (`type="time"`, np. `14:30`).
+ */
+function buildLocalPickupAt(rideDate: Date, rideTime: string): Date {
+    const parts = rideTime.trim().split(':').map((x) => Number(x))
+    const hours = parts[0] ?? 0
+    const minutes = parts[1] ?? 0
+    const seconds = parts[2] ?? 0
+    return new Date(
+        rideDate.getFullYear(),
+        rideDate.getMonth(),
+        rideDate.getDate(),
+        hours,
+        minutes,
+        seconds,
+        0,
+    )
+}
+
+
+/**
  * Builds a reservation from current wizard state and validates it against reservationSchema.
  */
 function buildReservationFromWizardState(): Result<Reservation> {
@@ -63,6 +92,16 @@ function buildReservationFromWizardState(): Result<Reservation> {
     if (!pickup || !dest || type == null) {
         console.error('[buildReservationFromWizardState] Missing required wizard fields')
         return { success: false, error: 'Missing required wizard fields' }
+    }
+
+    const phase2Parsed = phase2Schema.safeParse({
+        rideDate: rideDate.value,
+        rideTime: rideTime.value,
+        pickupType: pickupType.value,
+    })
+    if (!phase2Parsed.success) {
+        console.error('[buildReservationFromWizardState] Phase 2 validation failed:', phase2Parsed.error)
+        return { success: false, error: 'Phase 2 validation failed' }
     }
 
     const pickupDate = parseHtmlDateToLocalDate(rideDate.value.trim())
@@ -128,6 +167,36 @@ const phase2Schema = z.object({
     rideDate: phase2RideDateSchema,
     rideTime: z.iso.time().min(1, 'Wybierz godzinę przejazdu'),
     pickupType: z.enum(PickupTypeEnum),
+}).superRefine((data, ctx) => {
+    const pickupAt = buildLocalPickupAt(data.rideDate, data.rideTime)
+    const now = new Date()
+    if (pickupAt.getTime() >= now.getTime()) {
+        return
+    }
+
+    const todayStart = startOfLocalCalendarDay(now)
+    const selectedStart = startOfLocalCalendarDay(data.rideDate)
+    if (selectedStart.getTime() < todayStart.getTime()) {
+        ctx.addIssue({
+            code: "custom",
+            message: 'Data nie może być z przeszłości.',
+            path: ['rideDate'],
+        })
+    }
+    else if (selectedStart.getTime() === todayStart.getTime()) {
+        ctx.addIssue({
+            code: "custom",
+            message: 'Godzina nie może być w przeszłości.',
+            path: ['rideTime'],
+        })
+    }
+    else {
+        ctx.addIssue({
+            code: "custom",
+            message: 'Wybrany termin już minął.',
+            path: ['rideDate'],
+        })
+    }
 })
 
 
@@ -164,11 +233,7 @@ const isStep1Valid = computed(() =>
 
 
 const isStep2Valid = computed(() =>
-    phase2Schema.safeParse({
-        rideDate: rideDate.value,
-        rideTime: rideTime.value,
-        pickupType: pickupType.value,
-    }).success,
+    parse2Step().success,
 )
 
 
@@ -187,6 +252,58 @@ const steps4Visited = ref<boolean>(false)
 const allStepsValidAndLastVisited = computed(() =>
     isStep1Valid.value && isStep2Valid.value && isStep3Valid.value && steps4Visited.value,
 )
+
+
+function parse2Step() {
+    return phase2Schema.safeParse({
+        rideDate: rideDate.value,
+        rideTime: rideTime.value,
+        pickupType: pickupType.value,
+    })
+}
+
+
+const phase2Parse = computed(() => parse2Step())
+
+
+const showDateError = computed(() => {
+    if (!rideDate.value) {
+        return false
+    }
+    if (phase2Parse.value.success) {
+        return false
+    }
+    return phase2Parse.value.error.issues.some((issue) => issue.path[0] === 'rideDate')
+})
+
+
+const showTimeError = computed(() => {
+    if (!rideTime.value) {
+        return false
+    }
+    if (phase2Parse.value.success) {
+        return false
+    }
+    return phase2Parse.value.error.issues.some((issue) => issue.path[0] === 'rideTime')
+})
+
+
+/**
+ * Returns the first Zod error message for a phase-2 field (inline text under the input).
+ */
+function phase2FieldMessage(pathKey: 'rideDate' | 'rideTime'): string {
+    if (pathKey === 'rideDate' && !rideDate.value) {
+        return ''
+    }
+    if (pathKey === 'rideTime' && !rideTime.value) {
+        return ''
+    }
+    const parsed = phase2Parse.value
+    if (parsed.success) {
+        return ''
+    }
+    return parsed.error.issues.find((issue) => issue.path[0] === pathKey)?.message ?? ''
+}
 
 
 function goToStep(targetStep: number) {
@@ -247,6 +364,14 @@ function handlePickupLocationSelected(location: TomLocation) {
 
 function handleDestinationSelected(location: TomLocation) {
     destination.value = location
+}
+
+
+function handleDistanceUpdated(dist: number): void {
+    distance.value = dist
+    if (destination.value) {
+        destination.value.dist = dist
+    }
 }
 
 
@@ -432,6 +557,7 @@ const formatDate = (dateStr: string) => {
                       to-icon="i-lucide-navigation"
                       @from-location-selected="handlePickupLocationSelected"
                       @to-location-selected="handleDestinationSelected"
+                      @distance-updated="handleDistanceUpdated"
                     />
                   </div>
                   <div class="flex flex-col gap-2 mt-4">
@@ -467,11 +593,37 @@ const formatDate = (dateStr: string) => {
                     <div class="flex flex-col gap-3">
                       <div>
                         <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Data</label>
-                        <UInput v-model="rideDate" type="date" icon="i-lucide-calendar" class="w-full" />
+                        <UInput
+                          v-model="rideDate"
+                          type="date"
+                          icon="i-lucide-calendar"
+                          class="w-full"
+                          :color="showDateError ? 'error' : 'primary'"
+                          :highlight="showDateError"
+                        />
+                        <p
+                          v-show="showDateError"
+                          class="text-left text-xs text-error mt-1.5"
+                        >
+                          {{ phase2FieldMessage('rideDate') }}
+                        </p>
                       </div>
                       <div>
                         <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Godzina</label>
-                        <UInput v-model="rideTime" type="time" icon="i-lucide-clock" class="w-full" />
+                        <UInput
+                          v-model="rideTime"
+                          type="time"
+                          icon="i-lucide-clock"
+                          class="w-full"
+                          :color="showTimeError ? 'error' : 'primary'"
+                          :highlight="showTimeError"
+                        />
+                        <p
+                          v-show="showTimeError"
+                          class="text-left text-xs text-error mt-1.5"
+                        >
+                          {{ phase2FieldMessage('rideTime') }}
+                        </p>
                       </div>
                     </div>
 

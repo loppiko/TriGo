@@ -235,7 +235,6 @@ function formatTime(reservation: Reservation): string {
  */
 function formatDate(reservation: Reservation): string {
     return reservation.pickupDate.toLocaleDateString('pl-PL', {
-        weekday: 'short',
         day: 'numeric',
         month: 'short',
     })
@@ -459,7 +458,8 @@ function formatDate(reservation: Reservation): string {
                   {{ reservationStatusLabel(res.status) }}
                 </span>
               </div>
-              <span class="text-xs text-gray-400 dark:text-dark-400">
+              <span class="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-dark-400">
+                <UIcon name="i-heroicons-calendar-days" class="size-4 shrink-0" />
                 {{ formatDate(res) }} · {{ formatTime(res) }}
               </span>
             </div>
@@ -517,7 +517,7 @@ function formatDate(reservation: Reservation): string {
                 <div class="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-dark-700 text-xs font-bold text-gray-600 dark:text-dark-300">
                   {{ res.clientDetails.firstName[0] }}{{ res.clientDetails.lastName[0] }}
                 </div>
-                <div class="min-w-0">
+                <div class="min-w-0 flex flex-col gap-0.5">
                   <p class="truncate text-sm font-medium text-gray-900 dark:text-dark-50">
                     {{ res.clientDetails.firstName }} {{ res.clientDetails.lastName }}
                   </p>

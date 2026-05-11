@@ -97,6 +97,14 @@ function handleDestinationSelected(loc: TomLocation): void {
 }
 
 
+function handleDistanceUpdated(dist: number): void {
+    form.value.distance = dist
+    if (selectedDestination.value) {
+        selectedDestination.value.dist = dist
+    }
+}
+
+
 const resolvedPickup = computed<Place | null>(() =>
     selectedPickup.value ? TomLocationToPlace(selectedPickup.value) : null,
 )
@@ -195,6 +203,7 @@ async function submit(close: () => void): Promise<void> {
           to-icon="i-lucide-navigation"
           @from-location-selected="handlePickupSelected"
           @to-location-selected="handleDestinationSelected"
+          @distance-updated="handleDistanceUpdated"
         />
       </fieldset>
 
