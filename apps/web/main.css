@@ -23,6 +23,21 @@
   --color-dark-950: #121118;
 }
 
+/* Tailwind green palette shifted one level darker */
+@theme static {
+  --color-green-50:  #f0fdf4;
+  --color-green-100: #dcfce7;
+  --color-green-200: #bbf7d0;
+  --color-green-300: #86efac;
+  --color-green-400: #22c55e;
+  --color-green-500: #16a34a;
+  --color-green-600: #15803d;
+  --color-green-700: #166534;
+  --color-green-800: #14532d;
+  --color-green-900: #052e16;
+  --color-green-950: #022c16;
+}
+
 
 .dark {
   background-color: var(--color-dark);

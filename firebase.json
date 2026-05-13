@@ -17,7 +17,7 @@
     },
     {
       "site": "admin-trigo",
-      "public": "apps/admin/public",
+      "public": "apps/admin/.output/public",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
         {

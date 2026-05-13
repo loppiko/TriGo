@@ -27,6 +27,13 @@ export default defineNuxtConfig({
                 rectangleGeobias: process.env.NUXT_PUBLIC_TOMTOM_RECTANGLE_GEOBIAS,
                 fuzzySearchResponsesLimit: process.env.NUXT_PUBLIC_TOMTOM_FUZZY_SEARCH_RESPONSES_LIMIT,
             },
+            mapbox: {
+                accessToken: process.env.NUXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+                defaultCenterLng: process.env.NUXT_PUBLIC_MAPBOX_DEFAULT_CENTER_LNG,
+                defaultCenterLat: process.env.NUXT_PUBLIC_MAPBOX_DEFAULT_CENTER_LAT,
+                defaultZoom: process.env.NUXT_PUBLIC_MAPBOX_DEFAULT_ZOOM,
+                defaultZoom3dThreshold: process.env.NUXT_PUBLIC_MAPBOX_DEFAULT_ZOOM_3D_TRESHOLD,
+            },
         },
     },
 

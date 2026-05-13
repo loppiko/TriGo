@@ -1,7 +1,7 @@
 import { z } from 'zod/v4'
 
 /**
- * Location coordinates schema.
+ * Place coordinates schema.
  */
 export const locationCoordinatesSchema = z.object({
     lat: z.number(),
@@ -24,6 +24,6 @@ export const locationSchema = z.object({
 })
 
 
-export type LocationCoordinates = z.infer<typeof locationCoordinatesSchema>
-export type LocationAddress = z.infer<typeof locationAddressSchema>
-export type Location = z.infer<typeof locationSchema>
+export type PlaceCoordinates = z.infer<typeof locationCoordinatesSchema>
+export type PlaceAddress = z.infer<typeof locationAddressSchema>
+export type Place = z.infer<typeof locationSchema>

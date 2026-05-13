@@ -23,6 +23,7 @@ const reservationConverter = {
         return {
             ...validated,
             deviceId: sessionDeviceId,
+            pickupDate: Timestamp.fromDate(reservation.pickupDate),
             createdAt: (reservation.createdAt) ? Timestamp.fromDate(reservation.createdAt) : serverTimestamp(),
             updatedAt: (reservation.updatedAt) ? Timestamp.fromDate(reservation.updatedAt) : serverTimestamp(),
         }

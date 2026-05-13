@@ -1,16 +1,26 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { Result } from '#shared/types/core'
-import type { Location } from '#shared/types/location/schema'
+import { TomLocationSchema, type TomLocation } from '#shared/types/location/search/schema'
 import { reservationSchema, type Reservation } from '#shared/types/reservations/schema'
 import { errorNotification, infoNotification } from '~/utils/notifications/toast'
-import LocationSearchInput from '~/components/LocationSeachInput/LocationSearchInput.vue'
-import { processedLocationSchema, type ProcessedLocation } from '~/types/locationSearch/schema'
-import { PickupTypeEnum } from '#shared/types/reservations/enums'
+import LocationSearchInput from '~/components/shared/LocationSeachInput/LocationSearchInput.vue'
+import { ReservationStatus } from '#shared/types/reservations/enums'
+import type { PickupTypeEnum } from '#shared/types/reservations/enums'
 import { useReservations } from '~/composables/database/useReservations'
+import { TomLocationToPlace } from '#shared/types/location/search/tomLocation'
+import DateTimePickup, { parseHtmlDateToLocalDate, phase2Schema } from '~/components/pages/reservation/DateTimePickup.vue'
+import ContactData, { phase3Schema } from '~/components/pages/reservation/ContactData.vue'
+import ReservationSummary from '~/components/pages/reservation/ReservationSummary.vue'
+import Map from '~/components/shared/Map/Map.vue'
+import ContinueButton from '~/components/shared/buttons/ContinueButton.vue'
+import SummaryButton from '~/components/shared/buttons/SummaryButton.vue'
+import ReservationButton from '~/components/shared/buttons/ReservationButton.vue'
+
+const mapRef = ref<InstanceType<typeof Map> | null>(null)
 
 
-definePageMeta({ layout: 'home' })
+definePageMeta({ layout: 'reservation' })
 
 const { createReservation } = useReservations()
 
@@ -18,8 +28,9 @@ const RESERVATION_INTERNAL_ERROR_TITLE = 'Nieudało się wykonać rezerwacji'
 const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
   'Wystąpił wewnętrzny błąd aplikacji, prosimy skontaktuj się z nami.'
 
-const pickupLocation = ref<ProcessedLocation | undefined>()
-const destination = ref<ProcessedLocation | undefined>()
+const pickupLocation = ref<TomLocation | undefined>()
+const destination = ref<TomLocation | undefined>()
+const distance = ref<number>(0)
 const rideDate = ref('')
 const rideTime = ref('')
 const pickupType = ref<PickupTypeEnum | null>(null)
@@ -30,45 +41,6 @@ const phoneNumber = ref('')
 const step = ref(1)
 const showSuccess = ref(false)
 const isReservationSubmitting = ref(false)
-
-
-/**
- * Parses an HTML `input[type="date"]` value (`YYYY-MM-DD`) into a local calendar date.
- */
-function parseHtmlDateToLocalDate(isoDate: string): Date | null {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
-        return null
-    }
-
-    const parts = isoDate.split('-').map(Number)
-    const year = parts[0]
-    const month = parts[1]
-    const day = parts[2]
-    if (year == null || month == null || day == null) {
-        return null
-    }
-    return new Date(year, month - 1, day)
-}
-
-
-/**
- * Maps a TomTom processed location into the shared Location shape for reservations.
- */
-function processedLocationToReservationLocation(processed: ProcessedLocation): Location {
-    return {
-        name: processed.poi?.name ?? processed.address.freeformAddress,
-        description: processed.processedCategory.description,
-        address: {
-            freeformAddress: processed.address.freeformAddress,
-            municipality: processed.address.municipality,
-            countryCode: processed.address.countryCode,
-        },
-        position: {
-            lat: processed.position.lat,
-            lon: processed.position.lon,
-        },
-    }
-}
 
 
 /**
@@ -99,10 +71,12 @@ function buildReservationFromWizardState(): Result<Reservation> {
     const normalizedPhone = phoneNumber.value.replace(/\s/g, '')
 
     const candidate: Reservation = {
-        pickupLocation: processedLocationToReservationLocation(pickup),
-        destination: processedLocationToReservationLocation(dest),
+        pickupLocation: TomLocationToPlace(pickup),
+        destination: TomLocationToPlace(dest),
         pickupDate,
         pickupTime: trimmedTime,
+        distance: dest.dist!,
+        status: ReservationStatus.WAITING_FOR_ASSIGNMENT,
         pickupType: type,
         clientDetails: {
             firstName: firstName.value.trim(),
@@ -121,39 +95,23 @@ function buildReservationFromWizardState(): Result<Reservation> {
 }
 
 
+watch(pickupLocation, (newVal) => {
+    if (!newVal) return
+    mapRef.value?.flyTo(newVal.position.lat, newVal.position.lon, 'pickup')
+})
+
+
+watch(destination, (newVal) => {
+    if (!newVal) return
+    mapRef.value?.flyTo(newVal.position.lat, newVal.position.lon, 'destination')
+})
+
 const phase1Schema = z.object({
-    pickupLocation: processedLocationSchema,
-    destination: processedLocationSchema,
+    pickupLocation: TomLocationSchema,
+    destination: TomLocationSchema,
 }).refine((data) => data.pickupLocation.id !== data.destination.id, {
     message: 'Miejsce odbioru i cel muszą być różne',
     path: ['destination'],
-})
-
-
-/**
- * `UInput` `type="date"` supplies `YYYY-MM-DD` strings; we parse to the same local {@link Date} used for {@link reservationSchema} `pickupDate`.
- */
-const phase2RideDateSchema = z
-    .string()
-    .trim()
-    .min(1, 'Wybierz datę przejazdu')
-    .refine((s) => parseHtmlDateToLocalDate(s) !== null, { message: 'Wybierz datę przejazdu' })
-    .transform((s) => parseHtmlDateToLocalDate(s)!)
-
-
-const phase2Schema = z.object({
-    rideDate: phase2RideDateSchema,
-    rideTime: z.iso.time().min(1, 'Wybierz godzinę przejazdu'),
-    pickupType: z.enum(PickupTypeEnum),
-})
-
-
-const phase3Schema = z.object({
-    firstName: z.string().min(1, 'Podaj imię').max(100, 'Imię jest za długie'),
-    lastName: z.string().min(1, 'Podaj nazwisko').max(100, 'Nazwisko jest za długie'),
-    phoneNumber: z.string()
-        .min(9, 'Numer telefonu musi mieć co najmniej 9 cyfr')
-        .regex(/^[\d\s+-]+$/, 'Podaj prawidłowy numer telefonu'),
 })
 
 
@@ -257,13 +215,21 @@ function validateAndAdvance() {
 }
 
 
-function handlePickupLocationSelected(location: ProcessedLocation) {
+function handlePickupLocationSelected(location: TomLocation) {
     pickupLocation.value = location
 }
 
 
-function handleDestinationSelected(location: ProcessedLocation) {
+function handleDestinationSelected(location: TomLocation) {
     destination.value = location
+}
+
+
+function handleDistanceUpdated(dist: number): void {
+    distance.value = dist
+    if (destination.value) {
+        destination.value.dist = dist
+    }
 }
 
 
@@ -284,88 +250,37 @@ async function submitReservation() {
 
     isReservationSubmitting.value = true
     const result = await createReservation(built.data)
-    
+
     if (!result.success) {
         errorNotification(RESERVATION_INTERNAL_ERROR_TITLE, RESERVATION_INTERNAL_ERROR_DESCRIPTION)
         isReservationSubmitting.value = false
         return
     }
-    
+
     showSuccess.value = true
     isReservationSubmitting.value = false
-}
-
-
-
-/**
- * Single-line label for summary UI (TomTom processed location).
- */
-function locationDisplayLabel(location: ProcessedLocation | undefined): string {
-    if (!location) {
-        return ''
-    }
-
-    return location.poi?.name?.trim()
-        ?? location.address.freeformAddress?.trim()
-        ?? [location.address.municipality, location.address.countrySubdivision]
-            .filter((value): value is string => Boolean(value))
-            .join(', ')
-        ?? '—'
-}
-
-
-const pickupTypeOptions = [
-    {
-        value: PickupTypeEnum.MEET_AND_GREET,
-        title: 'Meet & Greet',
-        description: 'Kierowca wyjdzie po Ciebie z tabliczką i pomoże z bagażem',
-        icon: 'i-lucide-handshake',
-    },
-    {
-        value: PickupTypeEnum.STANDARD,
-        title: 'Standard Pickup',
-        description: 'Kierowca będzie czekał w samochodzie pod wskazanym adresem',
-        icon: 'i-lucide-car',
-    },
-]
-
-
-const formatDate = (dateStr: string) => {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString('pl-PL', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-    })
 }
 </script>
 
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-green-50/40 to-white dark:from-dark-950 dark:to-dark-900">
-    <div class="min-h-screen flex flex-col max-w-md mx-auto px-5 relative">
+  <div class="relative h-[calc(100vh-3.55rem)]">
+    <div
+      class="absolute inset-0 z-0 transition-all duration-500"
+      :class="step !== 1 ? 'blur-sm pointer-events-none brightness-75' : ''"
+    >
+      <Map ref="mapRef" />
+    </div>
+    <div 
+      class="flex flex-col max-w-[1200px] mx-auto px-5 relative z-10 h-max"
+      :class="step !== 1 ? 'h-full' : ''"
+    >
       <!-- Success screen -->
       <Transition name="success" mode="out-in">
         <div
           v-if="showSuccess"
           key="success"
-          class="min-h-screen flex flex-col relative"
+          class="h-full flex flex-col relative"
         >
-          <!-- Logo at top -->
-          <div class="logo-container logo-top text-center">
-            <div class="inline-flex items-center gap-3 mb-1">
-              <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-green-600 flex items-center justify-center shadow-lg shadow-primary/20">
-                <UIcon name="i-lucide-map-pin" class="size-5 text-white" />
-              </div>
-              <span class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                Tri<span class="text-primary">Go</span>
-              </span>
-            </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Zarezerwuj przejazd w Trójmieście
-            </p>
-          </div>
-
           <!-- Spacer for logo -->
           <div class="shrink-0 h-[100px]" aria-hidden />
 
@@ -396,351 +311,117 @@ const formatDate = (dateStr: string) => {
         </div>
 
         <!-- Form flow -->
-        <div v-else key="form" class="min-h-screen flex flex-col relative">
-          <!-- Logo - position animates: centered in step 1, top in step 2+ -->
-          <div
-            class="logo-container text-center"
-            :class="step === 1 ? 'logo-centered' : 'logo-top'"
-          >
-            <div class="inline-flex items-center gap-3 mb-1">
-              <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-green-600 flex items-center justify-center shadow-lg shadow-primary/20">
-                <UIcon name="i-lucide-map-pin" class="size-5 text-white" />
-              </div>
-              <span class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                Tri<span class="text-primary">Go</span>
-              </span>
-            </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Zarezerwuj przejazd w Trójmieście
-            </p>
-          </div>
-
-          <!-- Spacer for logo when at top (step 2+) -->
-          <div
-            v-if="step > 1"
-            class="shrink-0 h-[100px]"
-            aria-hidden
-          />
-
-          <!-- Previous phase header - clickable -->
-          <Transition name="fade">
-            <button
-              v-if="previousPhaseInfo"
-              type="button"
-              class="shrink-0 flex items-center justify-center gap-2 w-full opacity-60 hover:opacity-80 transition-opacity active:scale-[0.98] rounded-lg border border-dashed border-gray-300 dark:border-dark-600 py-2.5 px-3"
-              @click="goToStep(previousPhaseInfo.step)"
-            >
-              <span class="size-7 rounded-full bg-gray-200 dark:bg-dark-700 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-400 shrink-0">
-                {{ previousPhaseInfo.step }}
-              </span>
-              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {{ previousPhaseInfo.title }}
-              </span>
-            </button>
-          </Transition>
-
+        <div v-else key="form" class="h-max-content flex flex-col relative">
           <!-- Current section - centered -->
-          <div class="flex-1 flex flex-col items-center justify-center min-h-0 pb-12 w-full">
-            <Transition name="phase" mode="out-in">
-              <!-- Phase 1: Location -->
-              <div v-if="step === 1" key="phase1" class="w-full py-4">
-                <section class="text-center">
-                  <div class="flex flex-col items-center mb-4">
-                    <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
-                      1
-                    </div>
-                    <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Skąd i dokąd?
-                    </p>
-                  </div>
-                  <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
-                    <LocationSearchInput
-                      v-model:from-model-value="pickupLocation"
-                      v-model:to-model-value="destination"
-                      from-label="Miejsce odbioru"
-                      to-label="Cel podróży"
-                      placeholder="Wpisz lub wybierz lokalizację..."
-                      to-placeholder="Dokąd jedziesz?"
-                      icon="i-lucide-map-pin"
-                      to-icon="i-lucide-navigation"
-                      @from-location-selected="handlePickupLocationSelected"
-                      @to-location-selected="handleDestinationSelected"
-                    />
-                  </div>
-                  <div class="flex flex-col gap-2 mt-4">
-                    <UButton
-                      block
-                      :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
-                      @click="validateAndAdvance"
-                    >
-                      Dalej
-                    </UButton>
-                    <UButton 
-                      v-if="allStepsValidAndLastVisited"
-                      block 
-                      @click="goToStep(4)">
-                      Zobacz podsumowanie
-                    </UButton>
-                  </div>
-                </section>
-              </div>
-
-              <!-- Phase 2: Date/Time & Pickup Type -->
-              <div v-else-if="step === 2" key="phase2" class="w-full py-4">
-                <section class="text-center">
-                  <div class="flex flex-col items-center mb-4">
-                    <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
-                      2
-                    </div>
-                    <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Kiedy i jak?
-                    </p>
-                  </div>
-                  <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 space-y-5 shadow-sm">
-                    <div class="flex flex-col gap-3">
-                      <div>
-                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Data</label>
-                        <UInput v-model="rideDate" type="date" icon="i-lucide-calendar" class="w-full" />
-                      </div>
-                      <div>
-                        <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Godzina</label>
-                        <UInput v-model="rideTime" type="time" icon="i-lucide-clock" class="w-full" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-3 block">
-                        Forma odbioru
-                      </label>
-                      <div class="space-y-3">
-                        <button
-                          v-for="option in pickupTypeOptions"
-                          :key="option.value"
-                          class="w-full text-left p-4 rounded-xl border-2 transition-all duration-300 active:scale-[0.98]"
-                          :class="pickupType === option.value
-                            ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm shadow-primary/10'
-                            : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'"
-                          @click="pickupType = option.value"
-                        >
-                          <div class="flex items-start gap-3">
-                            <div
-                              class="size-10 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
-                              :class="pickupType === option.value
-                                ? 'bg-primary/10 text-primary'
-                                : 'bg-gray-100 dark:bg-dark-700 text-gray-400'"
-                            >
-                              <UIcon :name="option.icon" class="size-5" />
-                            </div>
-                            <div class="flex-1 min-w-0">
-                              <p class="font-bold text-sm text-gray-900 dark:text-white">{{ option.title }}</p>
-                              <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
-                                {{ option.description }}
-                              </p>
-                            </div>
-                            <Transition name="check">
-                              <UIcon
-                                v-if="pickupType === option.value"
-                                name="i-lucide-circle-check"
-                                class="size-5 text-primary shrink-0 mt-0.5"
-                              />
-                            </Transition>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="flex flex-col gap-2 mt-4">
-                    <UButton
-                      block
-                      :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
-                      @click="validateAndAdvance"
-                    >
-                      Dalej
-                    </UButton>
-                    <UButton v-if="allStepsValidAndLastVisited" block @click="goToStep(4)">
-                      Zobacz podsumowanie
-                    </UButton>
-                  </div>
-                </section>
-              </div>
-
-              <!-- Phase 3: Contact Details -->
-              <div v-else-if="step === 3" key="phase3" class="w-full py-4">
-                <section class="text-center">
-                  <div class="flex flex-col items-center mb-4">
-                    <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
-                      3
-                    </div>
-                    <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Dane kontaktowe
-                    </p>
-                  </div>
-                  <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4 shadow-sm">
-                    <div>
-                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Imię</label>
-                      <UInput v-model="firstName" placeholder="np. Jan" icon="i-lucide-user" class="w-full" />
-                    </div>
-                    <div>
-                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Nazwisko</label>
-                      <UInput v-model="lastName" placeholder="np. Kowalski" icon="i-lucide-user" class="w-full" />
-                    </div>
-                    <div>
-                      <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Numer telefonu</label>
-                      <UInput v-model="phoneNumber" type="tel" placeholder="np. 123 456 789" icon="i-lucide-phone" class="w-full" />
-                    </div>
-                  </div>
-                  <div class="flex flex-col gap-2 mt-4">
-                    <UButton
-                      block
-                      :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
-                      @click="validateAndAdvance"
-                    >
-                      Dalej
-                    </UButton>
-                    <UButton v-if="allStepsValidAndLastVisited" block @click="goToStep(4)">
-                      Zobacz podsumowanie
-                    </UButton>
-                  </div>
-                </section>
-              </div>
-
-              <!-- Phase 4: Summary -->
-              <div v-else key="phase4" class="w-full py-4 pb-8">
-                <section class="text-center">
-                  <div class="flex flex-col items-center mb-4">
-                    <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
-                      4
-                    </div>
-                    <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
-                      Podsumowanie
-                    </p>
-                  </div>
-
-                  <div class="rounded-2xl bg-gradient-to-br from-white/90 to-green-50/60 dark:from-dark-800/90 dark:to-primary/5 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm text-left">
-                    <div class="space-y-4">
-                      <div class="flex items-start gap-3">
-                        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <UIcon name="i-lucide-map-pin" class="size-5 text-primary" />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Trasa</p>
-                          <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ locationDisplayLabel(pickupLocation) }}
-                          </p>
-                          <div class="flex items-center gap-1.5 mt-0.5">
-                            <UIcon name="i-lucide-arrow-right" class="size-3 text-gray-400 shrink-0" />
-                            <p class="text-xs text-gray-500 dark:text-gray-400">
-                              {{ locationDisplayLabel(destination) }}
-                            </p>
-                          </div>
-                        </div>
-                        <UButton
-                          icon="i-lucide-pencil"
-                          variant="soft"
-                          color="primary"
-                          size="sm"
-                          aria-label="Edytuj trasę"
-                          class="shrink-0"
-                          @click="goToStep(1)"
-                        />
-                      </div>
-
-                      <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-                      <div class="flex items-start gap-3">
-                        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <UIcon name="i-lucide-calendar" class="size-5 text-primary" />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Termin</p>
-                          <p class="text-sm font-semibold text-gray-900 dark:text-white capitalize">
-                            {{ formatDate(rideDate) }}
-                          </p>
-                          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            Godzina: {{ rideTime }}
-                          </p>
-                        </div>
-                        <UButton
-                          icon="i-lucide-pencil"
-                          variant="soft"
-                          color="primary"
-                          size="sm"
-                          aria-label="Edytuj termin"
-                          class="shrink-0"
-                          @click="goToStep(2)"
-                        />
-                      </div>
-
-                      <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-                      <div class="flex items-start gap-3">
-                        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <UIcon
-                            :name="pickupType === 'meet-greet' ? 'i-lucide-handshake' : 'i-lucide-car'"
-                            class="size-5 text-primary"
-                          />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Forma odbioru</p>
-                          <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ pickupType === 'meet-greet' ? 'Meet & Greet' : 'Standard Pickup' }}
-                          </p>
-                        </div>
-                        <UButton
-                          icon="i-lucide-pencil"
-                          variant="soft"
-                          color="primary"
-                          size="sm"
-                          aria-label="Edytuj formę odbioru"
-                          class="shrink-0"
-                          @click="goToStep(2)"
-                        />
-                      </div>
-
-                      <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-                      <div class="flex items-start gap-3">
-                        <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <UIcon name="i-lucide-user" class="size-5 text-primary" />
-                        </div>
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs text-gray-500 dark:text-gray-400">Dane kontaktowe</p>
-                          <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ firstName }} {{ lastName }}
-                          </p>
-                          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {{ phoneNumber }}
-                          </p>
-                        </div>
-                        <UButton
-                          icon="i-lucide-pencil"
-                          variant="soft"
-                          color="primary"
-                          size="sm"
-                          aria-label="Edytuj dane kontaktowe"
-                          class="shrink-0"
-                          @click="goToStep(3)"
-                        />
-                      </div>
-                    </div>
-                    <UButton
-                      block
-                      size="xl"
-                      class="mt-6"
-                      :loading="isReservationSubmitting"
-                      :disabled="isReservationSubmitting"
-                      @click="submitReservation"
-                    >
-                      Zarezerwuj przejazd
-                    </UButton>
-                  </div>
-                </section>
-              </div>
+          <div 
+            class="flex-1 min-h-0 w-[calc(min(100%,700px))] relative mx-auto"
+            :class="step !== 1 ? 'overflow-y-auto' : ''"
+          >
+            <!-- Previous phase header - clickable -->
+            <Transition name="fade">
+              <UButton
+                v-if="previousPhaseInfo"
+                color="neutral"
+                variant="ghost"
+                class="absolute left-0 top-0 rounded-full bg-gray-100 dark:bg-dark-700 mt-8 pl-1.5 pr-1.5 [@media(min-height:700px)]:pr-4 py-1.5 opacity-80 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-dark-600 active:scale-[0.98] group"
+                @click="goToStep(previousPhaseInfo.step)"
+              >
+                <template #leading>
+                  <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-dark-500 group-hover:bg-gray-400 dark:group-hover:bg-dark-400 transition-colors duration-200">
+                    <UIcon name="i-lucide-arrow-left" class="size-4 text-white" />
+                  </span>
+                </template>
+                <span class="hidden [@media(min-height:700px)]:inline text-sm font-semibold text-gray-500 dark:text-gray-400">
+                  {{ previousPhaseInfo.title }}
+                </span>
+              </UButton>
             </Transition>
+            <!-- Phase 1: Place -->
+            <div v-if="step === 1" key="phase1" class="py-4">
+              <section class="text-center">
+                <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
+                  <LocationSearchInput
+                    v-model:from-model-value="pickupLocation"
+                    v-model:to-model-value="destination"
+                    from-label="Miejsce odbioru"
+                    to-label="Cel podróży"
+                    placeholder="Wpisz lub wybierz lokalizację..."
+                    to-placeholder="Dokąd jedziesz?"
+                    icon="i-lucide-map-pin"
+                    to-icon="i-lucide-navigation"
+                    @from-location-selected="handlePickupLocationSelected"
+                    @to-location-selected="handleDestinationSelected"
+                    @distance-updated="handleDistanceUpdated"
+                  />
+                </div>
+              </section>
+            </div>
+
+            <div v-else class="h-full mt-4 [@media(min-height:700px)]:mt-18">
+              <DateTimePickup
+                v-if="step === 2"
+                key="phase2"
+                v-model:ride-date="rideDate"
+                v-model:ride-time="rideTime"
+                v-model:pickup-type="pickupType"
+                custom-class="w-[calc(min(100%,700px))]"
+                @go-to-summary="goToStep(4)"
+              />
+
+              <ContactData
+                v-else-if="step === 3"
+                key="phase3"
+                v-model:first-name="firstName"
+                v-model:last-name="lastName"
+                v-model:phone-number="phoneNumber"
+                custom-class="w-[calc(min(100%,700px))]"
+                @go-to-summary="goToStep(4)"
+              />
+
+              <ReservationSummary
+                v-else
+                key="phase4"
+                :pickup-location="pickupLocation"
+                :destination="destination"
+                :ride-date="rideDate"
+                :ride-time="rideTime"
+                :pickup-type="pickupType"
+                :first-name="firstName"
+                :last-name="lastName"
+                :phone-number="phoneNumber"
+                custom-class="w-[calc(min(100%,700px))]"
+                @edit-route="goToStep(1)"
+                @edit-schedule="goToStep(2)"
+                @edit-contact="goToStep(3)"
+                @submit-reservation="submitReservation"
+              />
+
+              <div class="w-full mx-auto pb-5 mb-5 mt-3 flex items-center gap-5">
+                <SummaryButton v-if="allStepsValidAndLastVisited && step !== 4" @click="goToStep(4)" />
+
+                <ContinueButton v-if="step === 2" @click="validateAndAdvance" />
+
+                <ContinueButton v-if="step === 3" @click="validateAndAdvance" />
+
+                <ReservationButton
+                  v-if="step === 4"
+                  :loading="isReservationSubmitting"
+                  :disabled="isReservationSubmitting"
+                  @click="submitReservation"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </Transition>
     </div>
+    <div
+      v-if="step === 1"
+      class="w-[220px] fixed bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-5"
+    >
+      <ContinueButton v-if="pickupLocation && destination" @click="validateAndAdvance" />
+    </div>
+    
   </div>
 </template>
 
@@ -788,15 +469,6 @@ const formatDate = (dateStr: string) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
-}
-
-.check-enter-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.check-enter-from {
-  opacity: 0;
-  transform: scale(0);
 }
 
 /* Success screen */
