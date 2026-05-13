@@ -12,7 +12,7 @@ const props = defineProps<{
     firstName: string
     lastName: string
     phoneNumber: string
-    isReservationSubmitting: boolean
+    customClass?: string
 }>()
 
 
@@ -69,20 +69,20 @@ const pickupTypeIcon = computed(() =>
 </script>
 
 <template>
-  <div class="w-full py-4 pb-8">
+  <div class="py-4 pb-8 mx-auto" :class="customClass ?? ''">
     <section class="text-center">
       <div class="flex flex-col items-center mb-4">
         <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
           4
         </div>
-        <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <p class="mt-2.5 text-sm font-semibold text-gray-100 dark:text-gray-200">
           Podsumowanie
         </p>
       </div>
 
-      <div class="rounded-2xl bg-gradient-to-br from-white/90 to-green-50/60 dark:from-dark-800/90 dark:to-primary/5 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm text-left">
+      <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm text-left">
         <div class="space-y-4">
-          <div class="flex items-start gap-3">
+          <div class="flex items-start gap-3 rounded-xl bg-white dark:bg-dark-900 px-3 py-3">
             <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <UIcon name="i-lucide-map-pin" class="size-5 text-primary" />
             </div>
@@ -110,9 +110,7 @@ const pickupTypeIcon = computed(() =>
             />
           </div>
 
-          <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-          <div class="flex items-start gap-3">
+          <div class="flex items-start gap-3 rounded-xl bg-white dark:bg-dark-900 px-3 py-3">
             <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <UIcon name="i-lucide-calendar" class="size-5 text-primary" />
             </div>
@@ -137,9 +135,7 @@ const pickupTypeIcon = computed(() =>
             />
           </div>
 
-          <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-          <div class="flex items-start gap-3">
+          <div class="flex items-start gap-3 rounded-xl bg-white dark:bg-dark-900 px-3 py-3">
             <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <UIcon
                 :name="pickupTypeIcon"
@@ -164,9 +160,7 @@ const pickupTypeIcon = computed(() =>
             />
           </div>
 
-          <div class="h-px bg-gray-200 dark:bg-dark-600" />
-
-          <div class="flex items-start gap-3">
+          <div class="flex items-start gap-3 rounded-xl bg-white dark:bg-dark-900 px-3 py-3">
             <div class="size-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <UIcon name="i-lucide-user" class="size-5 text-primary" />
             </div>
@@ -191,17 +185,6 @@ const pickupTypeIcon = computed(() =>
             />
           </div>
         </div>
-        <UButton
-          block
-          size="xl"
-          class="mt-6"
-          type="button"
-          :loading="isReservationSubmitting"
-          :disabled="isReservationSubmitting"
-          @click="$emit('submitReservation')"
-        >
-          Zarezerwuj przejazd
-        </UButton>
       </div>
     </section>
   </div>

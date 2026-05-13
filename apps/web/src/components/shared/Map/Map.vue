@@ -13,19 +13,28 @@
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
+const config = useRuntimeConfig()
 /** Center of Trójmieście [lng, lat] */
-const DEFAULT_CENTER: [number, number] = [18.6, 54.32]
-const DEFAULT_ZOOM = 9
-const ZOOM_3D_THRESHOLD = 15
+
+const DEFAULT_CENTER: [number, number] = [Number(config.public.mapbox.defaultCenterLng), Number(config.public.mapbox.defaultCenterLat)]
+const DEFAULT_ZOOM = Number(config.public.mapbox.defaultZoom)
+const ZOOM_3D_THRESHOLD = Number(config.public.mapbox.defaultZoom3dThreshold)
 const PITCH_3D = 50
 const PITCH_FLAT = 0
 const TRANSITION_DURATION_MS = 900
 
-const config = useRuntimeConfig()
 const mapContainer = ref<HTMLDivElement | null>(null)
 const isLoaded = ref(false)
+type MarkerType = 'pickup' | 'destination'
+
+const MARKER_COLORS: Record<MarkerType, string> = {
+    pickup: '#16a34a',
+    destination: '#dc2626',
+}
+
 let map: mapboxgl.Map | null = null
 let is3DActive = false
+const activeMarkers = new Map<MarkerType, mapboxgl.Marker>()
 
 
 /** Transitions the map camera into 3D building view or back to flat based on current zoom. */
@@ -72,6 +81,24 @@ onUnmounted(() => {
     map?.remove()
     map = null
 })
+
+
+/** Smoothly flies the map camera to the given coordinates, sets zoom to 17, and places a marker. */
+function flyTo(lat: number, lng: number, markerType: MarkerType): void {
+    if (!map) return
+
+    map.flyTo({ center: [lng, lat], zoom: 17, duration: 1500 })
+
+    activeMarkers.get(markerType)?.remove()
+
+    const marker = new mapboxgl.Marker({ color: MARKER_COLORS[markerType] })
+        .setLngLat([lng, lat])
+        .addTo(map)
+
+    activeMarkers.set(markerType, marker)
+}
+
+defineExpose({ flyTo })
 </script>
 
 <style scoped>

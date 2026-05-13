@@ -18,24 +18,23 @@ const phoneNumber = defineModel<string>('phoneNumber', { required: true })
 
 
 defineProps<{
-    allStepsValidAndLastVisited: boolean
+    customClass?: string
 }>()
 
 
 defineEmits<{
-    advance: []
     goToSummary: []
 }>()
 </script>
 
 <template>
-  <div class="w-full py-4">
+  <div class="py-4 mx-auto" :class="customClass ?? ''">
     <section class="text-center">
       <div class="flex flex-col items-center mb-4">
         <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
           3
         </div>
-        <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <p class="mt-2.5 text-sm font-semibold text-gray-100 dark:text-gray-200">
           Dane kontaktowe
         </p>
       </div>
@@ -52,18 +51,6 @@ defineEmits<{
           <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Numer telefonu</label>
           <UInput v-model="phoneNumber" type="tel" placeholder="np. 123 456 789" icon="i-lucide-phone" class="w-full" />
         </div>
-      </div>
-      <div class="flex flex-col gap-2 mt-4">
-        <UButton
-          block
-          :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
-          @click="$emit('advance')"
-        >
-          Dalej
-        </UButton>
-        <UButton v-if="allStepsValidAndLastVisited" block @click="$emit('goToSummary')">
-          Zobacz podsumowanie
-        </UButton>
       </div>
     </section>
   </div>

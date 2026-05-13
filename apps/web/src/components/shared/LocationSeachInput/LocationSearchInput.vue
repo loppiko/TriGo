@@ -215,7 +215,7 @@ async function beginEditFrom() {
  * Switches „dokąd” from compact preview back to search field and focuses it.
  */
 async function beginEditTo() {
-    if (toInputActive.value) {
+    if (!toInputActive.value) {
         return
     }
 
@@ -231,8 +231,8 @@ async function beginEditTo() {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div>
+  <div class="flex items-start gap-2">
+    <div class="flex-1 w-[calc(min(100%,600px))]">
       <label
         v-if="fromLabel"
         class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400"
@@ -364,13 +364,17 @@ async function beginEditTo() {
       </div>
     </div>
 
-    <div v-if="fromChoosenLocation" class="flex items-center gap-3 px-2">
-      <div class="h-px flex-1 bg-gray-200 dark:bg-dark-600" />
-      <UIcon name="i-lucide-arrow-down-up" class="size-4 text-gray-300 dark:text-gray-600" />
-      <div class="h-px flex-1 bg-gray-200 dark:bg-dark-600" />
+    <div v-if="fromChoosenLocation" class="flex flex-col items-center self-stretch pt-5 gap-1">
+      <div class="flex-1 w-px bg-gray-200 dark:bg-dark-600" />
+      <UIcon
+        name="i-lucide-arrow-right"
+        class="size-3.5 shrink-0 transition-colors duration-200"
+        :class="fromChoosenLocation ? 'text-primary' : 'text-gray-300 dark:text-gray-600'"
+      />
+      <div class="flex-1 w-px bg-gray-200 dark:bg-dark-600" />
     </div>
 
-    <div v-show="toInputActive">
+    <div v-show="toInputActive" class="flex-1 min-w-0">
       <label
         v-if="toLabel"
         class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400"
@@ -427,7 +431,7 @@ async function beginEditTo() {
             :model-value="toQuery"
             :placeholder="toPlaceholder"
             :icon="toIcon"
-            :disabled="toInputActive"
+            :disabled="!toInputActive"
             size="lg"
             class="w-full"
             @update:model-value="handleToQueryInput"
@@ -526,3 +530,4 @@ async function beginEditTo() {
     </div>
   </div>
 </template>
+

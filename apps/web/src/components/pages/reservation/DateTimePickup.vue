@@ -109,12 +109,11 @@ const pickupType = defineModel<PickupTypeValue | null>('pickupType', { required:
 
 
 defineProps<{
-    allStepsValidAndLastVisited: boolean
+    customClass?: string
 }>()
 
 
 defineEmits<{
-    advance: []
     goToSummary: []
 }>()
 
@@ -172,13 +171,13 @@ function phase2FieldMessage(pathKey: 'rideDate' | 'rideTime'): string {
 </script>
 
 <template>
-  <div class="w-full py-4">
+  <div class="py-4 mx-auto" :class="customClass ?? ''">
     <section class="text-center">
       <div class="flex flex-col items-center mb-4">
         <div class="size-9 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-primary/25 ring-4 ring-primary/10">
           2
         </div>
-        <p class="mt-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200">
+        <p class="mt-2.5 text-sm font-semibold text-gray-200 dark:text-gray-200">
           Kiedy i jak?
         </p>
       </div>
@@ -230,8 +229,8 @@ function phase2FieldMessage(pathKey: 'rideDate' | 'rideTime'): string {
               :key="option.value"
               class="w-full text-left p-4 rounded-xl border-2 transition-all duration-300 active:scale-[0.98]"
               :class="pickupType === option.value
-                ? 'border-primary bg-primary/5 dark:bg-primary/10 shadow-sm shadow-primary/10'
-                : 'border-gray-200 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'"
+                ? 'border-primary bg-white dark:bg-dark-800 shadow-sm shadow-primary/10'
+                : 'border-gray-200 bg-white dark:bg-dark-800 dark:border-dark-700 hover:border-gray-300 dark:hover:border-dark-600'"
               type="button"
               @click="pickupType = option.value"
             >
@@ -261,18 +260,6 @@ function phase2FieldMessage(pathKey: 'rideDate' | 'rideTime'): string {
             </button>
           </div>
         </div>
-      </div>
-      <div class="flex flex-col gap-2 mt-4">
-        <UButton
-          block
-          :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
-          @click="$emit('advance')"
-        >
-          Dalej
-        </UButton>
-        <UButton v-if="allStepsValidAndLastVisited" block @click="$emit('goToSummary')">
-          Zobacz podsumowanie
-        </UButton>
       </div>
     </section>
   </div>

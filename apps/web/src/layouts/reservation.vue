@@ -25,7 +25,7 @@ const navigationItems: NavigationMenuItem[] = [
   <div class="min-h-screen flex flex-col dark:bg-dark">
     <header class="w-full bg-white dark:bg-dark-900 border-b border-gray-100 dark:border-dark-700 shadow-sm">
       <div class="relative max-w-7xl mx-auto px-5 h-14 flex items-center justify-center">
-        <NuxtLink to="/" class="absolute left-0 top-1/2 -translate-y-1/2 inline-flex items-center gap-3">
+        <NuxtLink to="/" class="absolute ml-4 left-0 top-1/2 -translate-y-1/2 inline-flex items-center gap-3">
           <div class="size-9 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20"/>
           <span class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
             Tri<span class="text-primary">Go</span>
@@ -37,9 +37,9 @@ const navigationItems: NavigationMenuItem[] = [
           variant="link"
           highlight
           highlight-color="primary"
-          class="w-full justify-center"
+          class="w-full justify-end min-[850px]:justify-center"
           :ui="{
-            link: 'px-4 py-2 rounded-none gap-2 after:h-[2px]',
+            link: 'px-3 py-2 rounded-none gap-0 min-[850px]:gap-2 after:h-[2px]',
             linkLeadingIcon: 'hidden',
             linkLabel: 'font-medium text-sm',
           }"
@@ -58,7 +58,7 @@ const navigationItems: NavigationMenuItem[] = [
           </template>
           <template #item-label="{ item, active }">
             <span
-              class="transition-colors duration-200"
+              class="hidden min-[850px]:inline transition-colors duration-200"
               :class="active ? 'text-gray-900 dark:text-white' : 'text-gray-400 dark:text-gray-500'"
             >
               {{ item.label }}
@@ -67,7 +67,7 @@ const navigationItems: NavigationMenuItem[] = [
         </UNavigationMenu>
       </div>
     </header>
-    <main class="flex-1 overflow-hidden">
+    <main class="flex-1 overflow-hidden h-full">
       <slot />
     </main>
   </div>

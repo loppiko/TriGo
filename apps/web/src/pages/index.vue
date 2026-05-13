@@ -13,6 +13,11 @@ import DateTimePickup, { parseHtmlDateToLocalDate, phase2Schema } from '~/compon
 import ContactData, { phase3Schema } from '~/components/pages/reservation/ContactData.vue'
 import ReservationSummary from '~/components/pages/reservation/ReservationSummary.vue'
 import Map from '~/components/shared/Map/Map.vue'
+import ContinueButton from '~/components/shared/buttons/ContinueButton.vue'
+import SummaryButton from '~/components/shared/buttons/SummaryButton.vue'
+import ReservationButton from '~/components/shared/buttons/ReservationButton.vue'
+
+const mapRef = ref<InstanceType<typeof Map> | null>(null)
 
 
 definePageMeta({ layout: 'reservation' })
@@ -91,11 +96,14 @@ function buildReservationFromWizardState(): Result<Reservation> {
 
 
 watch(pickupLocation, (newVal) => {
-    console.log('pickupLocation changed:', newVal)
+    if (!newVal) return
+    mapRef.value?.flyTo(newVal.position.lat, newVal.position.lon, 'pickup')
 })
 
+
 watch(destination, (newVal) => {
-    console.log('destination changed:', newVal)
+    if (!newVal) return
+    mapRef.value?.flyTo(newVal.position.lat, newVal.position.lon, 'destination')
 })
 
 const phase1Schema = z.object({
@@ -255,11 +263,17 @@ async function submitReservation() {
 </script>
 
 <template>
-  <div class="relative h-[calc(100dvh-3.55rem)] overflow-hidden">
-    <div class="absolute inset-0 z-0">
-      <Map />
+  <div class="relative h-[calc(100vh-3.55rem)]">
+    <div
+      class="absolute inset-0 z-0 transition-all duration-500"
+      :class="step !== 1 ? 'blur-sm pointer-events-none brightness-75' : ''"
+    >
+      <Map ref="mapRef" />
     </div>
-    <div class="flex flex-col max-w-[800px] mx-auto px-5 relative z-10 overflow-hidden">
+    <div 
+      class="flex flex-col max-w-[1200px] mx-auto px-5 relative z-10 h-max"
+      :class="step !== 1 ? 'h-full' : ''"
+    >
       <!-- Success screen -->
       <Transition name="success" mode="out-in">
         <div
@@ -267,19 +281,6 @@ async function submitReservation() {
           key="success"
           class="h-full flex flex-col relative"
         >
-          <!-- Logo at top -->
-          <div class="logo-container logo-top text-center">
-            <div class="inline-flex items-center gap-3 mb-1">
-              <div class="size-10 rounded-xl bg-gradient-to-br from-primary to-green-600 flex items-center justify-center shadow-lg shadow-primary/20"/>
-              <span class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
-                Tri<span class="text-primary">Go</span>
-              </span>
-            </div>
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-              Zarezerwuj przejazd w Trójmieście
-            </p>
-          </div>
-
           <!-- Spacer for logo -->
           <div class="shrink-0 h-[100px]" aria-hidden />
 
@@ -310,78 +311,60 @@ async function submitReservation() {
         </div>
 
         <!-- Form flow -->
-        <div v-else key="form" class="h-full flex flex-col relative">
-          <div
-            v-if="step > 1"
-            class="shrink-0 h-[100px]"
-            aria-hidden
-          />
-
-          <!-- Previous phase header - clickable -->
-          <Transition name="fade">
-            <button
-              v-if="previousPhaseInfo"
-              type="button"
-              class="shrink-0 flex items-center justify-center gap-2 w-full opacity-60 hover:opacity-80 transition-opacity active:scale-[0.98] rounded-lg border border-dashed border-gray-300 dark:border-dark-600 py-2.5 px-3"
-              @click="goToStep(previousPhaseInfo.step)"
-            >
-              <span class="size-7 rounded-full bg-gray-200 dark:bg-dark-700 flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-400 shrink-0">
-                {{ previousPhaseInfo.step }}
-              </span>
-              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">
-                {{ previousPhaseInfo.title }}
-              </span>
-            </button>
-          </Transition>
-
+        <div v-else key="form" class="h-max-content flex flex-col relative">
           <!-- Current section - centered -->
-          <div class="flex-1 flex flex-col min-h-0 pb-12">
-            <Transition name="phase" mode="out-in">
-              <!-- Phase 1: Place -->
-              <div v-if="step === 1" key="phase1" class="w-full py-4">
-                <section class="text-center">
-                  <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
-                    <LocationSearchInput
-                      v-model:from-model-value="pickupLocation"
-                      v-model:to-model-value="destination"
-                      from-label="Miejsce odbioru"
-                      to-label="Cel podróży"
-                      placeholder="Wpisz lub wybierz lokalizację..."
-                      to-placeholder="Dokąd jedziesz?"
-                      icon="i-lucide-map-pin"
-                      to-icon="i-lucide-navigation"
-                      @from-location-selected="handlePickupLocationSelected"
-                      @to-location-selected="handleDestinationSelected"
-                      @distance-updated="handleDistanceUpdated"
-                    />
-                  </div>
-                  <div class="flex flex-col gap-2 mt-4">
-                    <UButton
-                      v-if="false"
-                      block
-                      :variant="allStepsValidAndLastVisited ? 'soft' : 'solid'"
-                      @click="validateAndAdvance"
-                    >
-                      Dalej
-                    </UButton>
-                    <UButton 
-                      v-if="allStepsValidAndLastVisited"
-                      block 
-                      @click="goToStep(4)">
-                      Zobacz podsumowanie
-                    </UButton>
-                  </div>
-                </section>
-              </div>
+          <div 
+            class="flex-1 min-h-0 w-[calc(min(100%,700px))] relative mx-auto"
+            :class="step !== 1 ? 'overflow-y-auto' : ''"
+          >
+            <!-- Previous phase header - clickable -->
+            <Transition name="fade">
+              <UButton
+                v-if="previousPhaseInfo"
+                color="neutral"
+                variant="ghost"
+                class="absolute left-0 top-0 rounded-full bg-gray-100 dark:bg-dark-700 mt-8 pl-1.5 pr-1.5 [@media(min-height:700px)]:pr-4 py-1.5 opacity-80 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-dark-600 active:scale-[0.98] group"
+                @click="goToStep(previousPhaseInfo.step)"
+              >
+                <template #leading>
+                  <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-dark-500 group-hover:bg-gray-400 dark:group-hover:bg-dark-400 transition-colors duration-200">
+                    <UIcon name="i-lucide-arrow-left" class="size-4 text-white" />
+                  </span>
+                </template>
+                <span class="hidden [@media(min-height:700px)]:inline text-sm font-semibold text-gray-500 dark:text-gray-400">
+                  {{ previousPhaseInfo.title }}
+                </span>
+              </UButton>
+            </Transition>
+            <!-- Phase 1: Place -->
+            <div v-if="step === 1" key="phase1" class="py-4">
+              <section class="text-center">
+                <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
+                  <LocationSearchInput
+                    v-model:from-model-value="pickupLocation"
+                    v-model:to-model-value="destination"
+                    from-label="Miejsce odbioru"
+                    to-label="Cel podróży"
+                    placeholder="Wpisz lub wybierz lokalizację..."
+                    to-placeholder="Dokąd jedziesz?"
+                    icon="i-lucide-map-pin"
+                    to-icon="i-lucide-navigation"
+                    @from-location-selected="handlePickupLocationSelected"
+                    @to-location-selected="handleDestinationSelected"
+                    @distance-updated="handleDistanceUpdated"
+                  />
+                </div>
+              </section>
+            </div>
 
+            <div v-else class="h-full mt-4 [@media(min-height:700px)]:mt-18">
               <DateTimePickup
-                v-else-if="step === 2"
+                v-if="step === 2"
                 key="phase2"
                 v-model:ride-date="rideDate"
                 v-model:ride-time="rideTime"
                 v-model:pickup-type="pickupType"
-                :all-steps-valid-and-last-visited="allStepsValidAndLastVisited"
-                @advance="validateAndAdvance"
+                custom-class="w-[calc(min(100%,700px))]"
                 @go-to-summary="goToStep(4)"
               />
 
@@ -391,8 +374,7 @@ async function submitReservation() {
                 v-model:first-name="firstName"
                 v-model:last-name="lastName"
                 v-model:phone-number="phoneNumber"
-                :all-steps-valid-and-last-visited="allStepsValidAndLastVisited"
-                @advance="validateAndAdvance"
+                custom-class="w-[calc(min(100%,700px))]"
                 @go-to-summary="goToStep(4)"
               />
 
@@ -407,17 +389,39 @@ async function submitReservation() {
                 :first-name="firstName"
                 :last-name="lastName"
                 :phone-number="phoneNumber"
-                :is-reservation-submitting="isReservationSubmitting"
+                custom-class="w-[calc(min(100%,700px))]"
                 @edit-route="goToStep(1)"
                 @edit-schedule="goToStep(2)"
                 @edit-contact="goToStep(3)"
                 @submit-reservation="submitReservation"
               />
-            </Transition>
+
+              <div class="w-full mx-auto pb-5 mb-5 mt-3 flex items-center gap-5">
+                <SummaryButton v-if="allStepsValidAndLastVisited && step !== 4" @click="goToStep(4)" />
+
+                <ContinueButton v-if="step === 2" @click="validateAndAdvance" />
+
+                <ContinueButton v-if="step === 3" @click="validateAndAdvance" />
+
+                <ReservationButton
+                  v-if="step === 4"
+                  :loading="isReservationSubmitting"
+                  :disabled="isReservationSubmitting"
+                  @click="submitReservation"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </Transition>
     </div>
+    <div
+      v-if="step === 1"
+      class="w-[220px] fixed bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-5"
+    >
+      <ContinueButton v-if="pickupLocation && destination" @click="validateAndAdvance" />
+    </div>
+    
   </div>
 </template>
 
