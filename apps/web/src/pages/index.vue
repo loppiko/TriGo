@@ -22,7 +22,7 @@ const mapRef = ref<InstanceType<typeof Map> | null>(null)
 
 definePageMeta({ layout: 'reservation' })
 
-const { createReservation } = useReservations()
+const { createReservation, createReservationCode } = useReservations()
 
 const RESERVATION_INTERNAL_ERROR_TITLE = 'Nieudało się wykonać rezerwacji'
 const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
@@ -71,6 +71,7 @@ function buildReservationFromWizardState(): Result<Reservation> {
     const normalizedPhone = phoneNumber.value.replace(/\s/g, '')
 
     const candidate: Reservation = {
+        code: createReservationCode(),
         pickupLocation: TomLocationToPlace(pickup),
         destination: TomLocationToPlace(dest),
         pickupDate,
@@ -399,9 +400,9 @@ async function submitReservation() {
               <div class="w-full mx-auto pb-5 mb-5 mt-3 flex items-center gap-5">
                 <SummaryButton v-if="allStepsValidAndLastVisited && step !== 4" @click="goToStep(4)" />
 
-                <ContinueButton v-if="step === 2" @click="validateAndAdvance" />
+                <ContinueButton v-if="step === 2" text="Dalej" @click="validateAndAdvance" />
 
-                <ContinueButton v-if="step === 3" @click="validateAndAdvance" />
+                <ContinueButton v-if="step === 3" text="Dalej" @click="validateAndAdvance" />
 
                 <ReservationButton
                   v-if="step === 4"
@@ -419,7 +420,7 @@ async function submitReservation() {
       v-if="step === 1"
       class="w-[220px] fixed bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-5"
     >
-      <ContinueButton v-if="pickupLocation && destination" @click="validateAndAdvance" />
+      <ContinueButton v-if="pickupLocation && destination" text="Dalej" @click="validateAndAdvance" />
     </div>
     
   </div>

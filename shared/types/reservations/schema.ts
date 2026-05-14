@@ -1,6 +1,7 @@
 import { z } from 'zod/v4'
 import { locationSchema } from '../location/schema'
 import { PickupTypeEnum, ReservationStatus } from './enums'
+import { RESERVATION_CODE_ALPHABET_SET } from '../../consts/reservations'
 
 
 export const clientDetailsSchema = z.object({
@@ -17,11 +18,24 @@ export const assignedDriverSchema = z.object({
 })
 
 
+export const reservationCodeSchema = z.string().length(6).superRefine((data, ctx) => {
+    for (const char of data) {
+        if (!RESERVATION_CODE_ALPHABET_SET.has(char)) {
+            ctx.addIssue({
+                code: 'custom',
+                message: `Invalid code character: "${char}"`,
+            })
+        }
+    }
+})
+
+
 /**
  * @entity Reservation
  */
 export const reservationSchema = z.object({
     id: z.string().optional(),
+    code: reservationCodeSchema,
 
     pickupLocation: locationSchema,
     destination: locationSchema,
