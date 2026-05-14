@@ -3,5 +3,8 @@
   "private": true,
   "scripts": {
     "install:all": "pnpm install"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp", "workerd"]
   }
 }
