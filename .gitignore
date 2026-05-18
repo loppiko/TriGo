@@ -55,3 +55,6 @@ coverage/
 # Other
 *.local
 *.log
+
+# Backend
+wrangler.toml

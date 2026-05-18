@@ -1,17 +1,17 @@
-export interface Env {
-  // Add environment bindings here, e.g.:
-  // MY_KV: KVNamespace
-  // DB: D1Database
-}
+import { Hono } from 'hono'
+import { AppConfig, RawEnv } from './env'
+import { logger } from 'hono/logger'
+import { configInitMiddleware } from './middleware/configInit'
+import { firebaseInitMiddleware } from './middleware/firebaseInit'
+import { reservationsRoutes } from './routes/reservations'
 
-export default {
-  async fetch(request: Request, _env: Env): Promise<Response> {
-    const url = new URL(request.url)
 
-    if (url.pathname === '/health') {
-      return Response.json({ status: 'ok' })
-    }
+const app = new Hono<{ Bindings: RawEnv, Variables: { config: AppConfig } }>()
+app.use(logger())
+app.use('*', configInitMiddleware)
+app.use('*', firebaseInitMiddleware)
 
-    return new Response('Not Found', { status: 404 })
-  },
-} satisfies ExportedHandler<Env>
+app.route('/reservations', reservationsRoutes)
+
+
+export default app

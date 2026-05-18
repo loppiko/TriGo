@@ -3,5 +3,8 @@
   "name": "fleetgo-backend",
   "main": "src/index.ts",
   "compatibility_date": "2025-05-13",
-  "compatibility_flags": ["nodejs_compat"]
+  "compatibility_flags": ["nodejs_compat"],
+  "alias": {
+    "#shared": "../shared"
+  }
 }
