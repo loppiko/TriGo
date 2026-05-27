@@ -1,4 +1,4 @@
-import { Result } from "#shared/types/core"
+import type { Result } from "#shared/types/core"
 import { z } from "zod"
 
 

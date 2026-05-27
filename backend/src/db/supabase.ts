@@ -1,8 +1,10 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@fleetgo/shared/types/database/database.types";
-import { AppConfig, AppConfigSchema } from "src/env";
+import { AppConfigSchema } from "../env";
+import type { AppConfig } from "../env";
 import { HTTPException } from "hono/http-exception";
-import { Result } from "#shared/types/core";
+import type { Result } from "#shared/types/core";
 
 
 let supabaseClient: SupabaseClient<Database> | undefined

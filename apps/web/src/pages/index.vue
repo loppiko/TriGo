@@ -7,7 +7,7 @@ import { errorNotification, infoNotification } from '~/utils/notifications/toast
 import LocationSearchInput from '~/components/shared/LocationSeachInput/LocationSearchInput.vue'
 import { ReservationStatus } from '#shared/types/reservations/enums'
 import type { PickupTypeEnum } from '#shared/types/reservations/enums'
-import { useReservations } from '~/composables/database/useReservations'
+import { useReservations } from '~/composables/database/reservations/useReservations'
 import { TomLocationToPlace } from '#shared/types/location/search/tomLocation'
 import DateTimePickup, { parseHtmlDateToLocalDate, phase2Schema } from '~/components/pages/reservation/DateTimePickup.vue'
 import ContactData, { phase3Schema } from '~/components/pages/reservation/ContactData.vue'
@@ -22,7 +22,7 @@ const mapRef = ref<InstanceType<typeof Map> | null>(null)
 
 definePageMeta({ layout: 'reservation' })
 
-const { createReservation, createReservationCode } = useReservations()
+const { createReservation } = useReservations()
 
 const RESERVATION_INTERNAL_ERROR_TITLE = 'Nieudało się wykonać rezerwacji'
 const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
@@ -70,20 +70,21 @@ function buildReservationFromWizardState(): Result<Reservation> {
 
     const normalizedPhone = phoneNumber.value.replace(/\s/g, '')
 
+    const timeParts = trimmedTime.split(':')
+    pickupDate.setHours(Number(timeParts[0]), Number(timeParts[1]), 0, 0)
+
     const candidate: Reservation = {
-        code: createReservationCode(),
-        pickupLocation: TomLocationToPlace(pickup),
+        pickup: TomLocationToPlace(pickup),
         destination: TomLocationToPlace(dest),
-        pickupDate,
-        pickupTime: trimmedTime,
         distance: dest.dist!,
-        status: ReservationStatus.WAITING_FOR_ASSIGNMENT,
+        pickupAt: pickupDate.toISOString(),
         pickupType: type,
         clientDetails: {
-            firstName: firstName.value.trim(),
             lastName: lastName.value.trim(),
+            firstName: firstName.value.trim(),
             phoneNumber: normalizedPhone,
         },
+        status: ReservationStatus.WAITING_FOR_ASSIGNMENT,
     }
 
     const parsed = reservationSchema.safeParse(candidate)

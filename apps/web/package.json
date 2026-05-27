@@ -33,15 +33,14 @@
     "vue-tsc": "^3.2.6"
   },
   "dependencies": {
+    "@fleetgo/shared": "workspace:*",
+    "hono": "^4.12.18",
     "@nuxt/image": "^1.10.0",
     "@nuxt/ui": "^4.3.1",
-    "@fleetgo/shared": "workspace:*",
+    "@supabase/supabase-js": "^2.106.0",
     "@vueuse/core": "^14.2.1",
-    "firebase": "^11.6.0",
     "mapbox-gl": "^3.23.1",
     "nuxt": "^4.3.1",
-    "nuxt-vuefire": "^1.1.0",
-    "vuefire": "^3.2.2",
     "zod": "catalog:"
   }
 }

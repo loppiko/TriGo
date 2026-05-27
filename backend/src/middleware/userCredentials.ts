@@ -1,6 +1,6 @@
-import { MiddlewareHandler } from "hono";
-import { HonoVariables } from "src";
-import { getSupabaseClient } from "src/db/supabase";
+import type { MiddlewareHandler } from "hono";
+import type { HonoVariables } from "..";
+import { getSupabaseClient } from "../db/supabase";
 
 
 export function userCredentialsMiddleware(): MiddlewareHandler<{ Variables: HonoVariables }> {

@@ -1,9 +1,9 @@
 import { Hono } from 'hono'
-import { AppConfig, RawEnv } from './env'
+import type { AppConfig, RawEnv } from './env'
 import { logger } from 'hono/logger'
 import { configInitMiddleware } from './middleware/configInit'
 import { reservationsRoutes } from './routes/reservations'
-import { User } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 import { supabaseInitMiddleware } from './middleware/supabaseInit'
 import { userCredentialsMiddleware } from './middleware/userCredentials'
 
@@ -21,7 +21,8 @@ app.use('*', configInitMiddleware)
 app.use('*', supabaseInitMiddleware())
 app.use('*', userCredentialsMiddleware())
 
-app.route('/reservations', reservationsRoutes)
+const routes = app.route('/reservations', reservationsRoutes)
 
 
+export type AppType = typeof routes
 export default app

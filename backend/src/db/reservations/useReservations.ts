@@ -1,8 +1,8 @@
 import type { Result } from '#shared/types/core'
 import type { Reservation } from '#shared/types/reservations/schema'
-import { Database } from '#shared/types/database/database.types'
+import type { Database } from '#shared/types/database/database.types'
 import { getSupabaseClient } from '../supabase'
-import { User } from '@supabase/supabase-js'
+import type { User } from '@supabase/supabase-js'
 import { RESERVATION_CODE_ALPHABET } from '#shared/consts/reservations'
 import { ReservationStatus } from '#shared/types/reservations/enums'
 

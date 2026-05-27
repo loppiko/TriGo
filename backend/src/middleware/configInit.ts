@@ -1,5 +1,5 @@
-import { Context, Next } from "hono";
-import { useAppConfig } from "src/env";
+import type { Context, Next } from "hono";
+import { useAppConfig } from "../env";
 
 
 export async function configInitMiddleware(c: Context, next: Next) {

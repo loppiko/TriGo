@@ -1,6 +1,6 @@
-import { MiddlewareHandler } from "hono";
-import { HonoVariables } from "src";
-import { initSupabaseClient } from "src/db/supabase";
+import type { MiddlewareHandler } from "hono";
+import type { HonoVariables } from "..";
+import { initSupabaseClient } from "../db/supabase";
 
 
 export function supabaseInitMiddleware(): MiddlewareHandler<{ Variables: HonoVariables }> {

@@ -1,9 +1,9 @@
 import { useReservationsHandler } from "../handlers/reservations";
 import { zValidator } from "@hono/zod-validator";
 import { reservationCreationBodySchema } from "../schemas/routes/reservations";
-import { RawEnv } from "src/env";
+import type { RawEnv } from "../env";
 import { Hono } from "hono";
-import { HonoVariables } from "src";
+import type { HonoVariables } from "..";
 
 
 // reservations/

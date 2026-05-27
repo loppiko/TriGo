@@ -8,18 +8,16 @@ export default defineNuxtConfig({
 
     alias: {
         '#shared': fileURLToPath(new URL('../../shared', import.meta.url)),
+        '#backend': fileURLToPath(new URL('../../backend/src', import.meta.url)),
     },
 
     runtimeConfig: {
         public: {
             entryEnv: import.meta.env.ENTRY_ENV,
-            firebase: {
-                apiKey: process.env.NUXT_PUBLIC_FIREBASE_API_KEY,
-                authDomain: process.env.NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-                projectId: process.env.NUXT_PUBLIC_FIREBASE_PROJECT_ID,
-                storageBucket: process.env.NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-                messagingSenderId: process.env.NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-                appId: process.env.NUXT_PUBLIC_FIREBASE_APP_ID,
+            backendUrl: process.env.NUXT_PUBLIC_BACKEND_URL,
+            supabase: {
+                url: process.env.NUXT_PUBLIC_SUPABASE_URL,
+                publishableKey: process.env.NUXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
             },
             tomtom: {
                 apiKey: process.env.NUXT_PUBLIC_TOMTOM_API_KEY,
@@ -38,20 +36,8 @@ export default defineNuxtConfig({
     },
 
     devtools: { enabled: true },
-    modules: ['@nuxt/eslint', '@nuxt/image', '@nuxt/ui', 'nuxt-vuefire'],
+    modules: ['@nuxt/eslint', '@nuxt/image', '@nuxt/ui'],
     css: ['./main.css'],
-
-    vuefire: {
-        config: {
-            apiKey: process.env.NUXT_PUBLIC_FIREBASE_API_KEY,
-            authDomain: process.env.NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-            projectId: process.env.NUXT_PUBLIC_FIREBASE_PROJECT_ID,
-            storageBucket: process.env.NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-            messagingSenderId: process.env.NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-            appId: process.env.NUXT_PUBLIC_FIREBASE_APP_ID,
-        },
-        emulators: { enabled: false },
-    },
 
     icon: {
         clientBundle: {

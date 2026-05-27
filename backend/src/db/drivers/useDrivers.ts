@@ -1,4 +1,4 @@
-import { Result } from "#shared/types/core";
+import type { Result } from "#shared/types/core";
 import { getSupabaseClient } from "../supabase";
 import type { Driver } from '#shared/types/drivers/schema'
 
