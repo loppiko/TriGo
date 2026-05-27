@@ -1,5 +1,6 @@
 import type { Result } from '#shared/types/core'
 import type { Reservation } from '#shared/types/reservations/schema'
+import { useSessionStorage } from '~/composables/auth/useSession'
 import { getHonoClient } from '~/composables/backend/hono'
 
 
@@ -12,7 +13,9 @@ export function useReservations() {
     async function createReservation(reservation: Omit<Reservation, 'id' | 'code' | 'deleted' | 'status' | 'updatedAt' | 'createdAt'>): Promise<Result<{ reservationCode: string }>> {
 
         try {
-            const response = await getHonoClient().reservations.$post({ json: reservation })
+            const deviceId = useSessionStorage().deviceId.value
+
+            const response = await getHonoClient().reservations.$post({ json: { ...reservation, deviceId } })
             if (!response.ok) {
                 const responseText = await response.text()
                 console.error('[createReservation] Backend error:', response.status, responseText)

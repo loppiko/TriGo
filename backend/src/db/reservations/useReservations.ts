@@ -1,6 +1,5 @@
 import type { Result } from '#shared/types/core'
 import type { Reservation } from '#shared/types/reservations/schema'
-import type { Database } from '#shared/types/database/database.types'
 import { getSupabaseClient } from '../supabase'
 import type { User } from '@supabase/supabase-js'
 import { RESERVATION_CODE_ALPHABET } from '#shared/consts/reservations'
@@ -23,7 +22,7 @@ function createReservationCode(): string {
 }
 
 
-function toSupabaseReservation(reservation: Reservation, userCredentials: User | null): Database['public']['Tables']['Reservations']['Insert'] {
+function toSupabaseReservation(reservation: Reservation, userCredentials: User | null) {
     return {
         ...reservation,
         code: (reservation.code ?? createReservationCode()),
@@ -41,10 +40,8 @@ async function createReservation(reservation: Omit<Reservation, 'code' | 'status
     const supabaseReservation = toSupabaseReservation({ ...reservation, code: reservationCode, status: ReservationStatus.WAITING_FOR_ASSIGNMENT }, userCredentials)
     
     const { error } = await getSupabaseClient()
-        .functions.invoke('createReservation', {
-            body: {
-                payload: supabaseReservation,
-            },
+        .rpc('createReservation', {
+            payload: supabaseReservation,
         })
 
     if (error) {

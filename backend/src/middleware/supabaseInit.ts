@@ -9,7 +9,7 @@ export function supabaseInitMiddleware(): MiddlewareHandler<{ Variables: HonoVar
 
         const supabaseInitResult = initSupabaseClient(config)
         if (!supabaseInitResult.success) {
-            console.error(supabaseInitResult.error)
+            console.error("[supabaseInitMiddleware] Failed to initialize supabase client:", supabaseInitResult.error)
             return c.json({ error: "Internal Error. App initialization error." }, 500)
         }
 

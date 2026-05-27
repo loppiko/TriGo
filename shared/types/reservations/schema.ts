@@ -16,7 +16,7 @@ export const assignedDriverSchema = z.object({
 
 
 
-const clientDetailsSchema = z.object({
+const clientDataSchema = z.object({
     lastName: z.string(),
     firstName: z.string(),
     phoneNumber: z.string(),
@@ -46,7 +46,7 @@ export const reservationSchema = z.object({
     destination: locationSchema,
     distance: z.number(),
 
-    clientDetails: clientDetailsSchema,
+    clientData: clientDataSchema,
 
     pickupAt: z.iso.datetime(),
     pickupType: z.enum(PickupTypeEnum),

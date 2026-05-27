@@ -6,6 +6,7 @@ import { reservationsRoutes } from './routes/reservations'
 import type { User } from '@supabase/supabase-js'
 import { supabaseInitMiddleware } from './middleware/supabaseInit'
 import { userCredentialsMiddleware } from './middleware/userCredentials'
+import { corsInitMiddleware } from './middleware/corsInit'
 
 
 export type HonoVariables = {
@@ -18,6 +19,7 @@ const app = new Hono<{ Bindings: RawEnv, Variables: HonoVariables }>()
 
 app.use(logger())
 app.use('*', configInitMiddleware)
+app.use('*', corsInitMiddleware())
 app.use('*', supabaseInitMiddleware())
 app.use('*', userCredentialsMiddleware())
 

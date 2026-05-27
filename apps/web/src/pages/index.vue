@@ -79,7 +79,7 @@ function buildReservationFromWizardState(): Result<Reservation> {
         distance: dest.dist!,
         pickupAt: pickupDate.toISOString(),
         pickupType: type,
-        clientDetails: {
+        clientData: {
             lastName: lastName.value.trim(),
             firstName: firstName.value.trim(),
             phoneNumber: normalizedPhone,
