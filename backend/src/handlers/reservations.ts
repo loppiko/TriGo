@@ -1,16 +1,8 @@
-import { Context } from "hono";
+import { createReservation } from "./reservations/createReservation";
 
 
 export function useReservationsHandler() {
     return {
-        updateReservation,
+        createReservation,
     }
 } 
-
-
-async function updateReservation(c: Context) {
-    const code = c.req.param('code')
-    const config = c.get('config')
-
-    return c.json({ message: `Reservation updated: ${code}. Config: ${JSON.stringify(config)}` })
-}

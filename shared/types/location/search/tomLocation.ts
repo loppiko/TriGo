@@ -5,38 +5,60 @@ import { TomSearchResultType, TomLocationCategoryCodeEnum } from './enum'
 import type { TomLocation } from './schema'
 
 
-export function reservationPickupLocationToTomLocation(reservation: Reservation): TomLocation {
-    const pickupLocation = reservation.pickupLocation
-    const pickupLocationName = pickupLocation.name
+/**
+ * Reconstructs a fuzzy-search-shaped TomLocation from a persisted Place (round-trip after TomLocationToPlace).
+ */
+function placeToTomLocation(place: Place, options: { dist?: number }): TomLocation {
+    const locationName = place.name
 
-    const type = (pickupLocationName && pickupLocationName in POI_CATEGORY_MAPPING) ? TomSearchResultType.POI : TomSearchResultType.POINT_ADDRESS
-    const category = (pickupLocationName && pickupLocationName in POI_CATEGORY_MAPPING) ? POI_CATEGORY_MAPPING[pickupLocationName as TomLocationCategoryCodeEnum] : DEFAULT_LOCATION_CATEGORIES[TomSearchResultType.POINT_ADDRESS]
+    const type =
+        locationName && locationName in POI_CATEGORY_MAPPING
+            ? TomSearchResultType.POI
+            : TomSearchResultType.POINT_ADDRESS
 
-    return {
+    const category =
+        locationName && locationName in POI_CATEGORY_MAPPING
+            ? POI_CATEGORY_MAPPING[locationName as TomLocationCategoryCodeEnum]
+            : DEFAULT_LOCATION_CATEGORIES[TomSearchResultType.POINT_ADDRESS]
+
+    const base: TomLocation = {
         type,
         score: 1,
-        id: "",
-        ...pickupLocation,
-        processedCategory: category
+        id: place.id ?? '',
+        dist: options.dist,
+        address: {
+            freeformAddress: place.freeformAddress,
+            municipality: place.municipality,
+            countryCode: place.countryCode,
+        },
+        position: {
+            lat: place.lat,
+            lon: place.lon,
+        },
+        processedCategory: category,
     }
+
+    if (type === TomSearchResultType.POI && locationName) {
+        return {
+            ...base,
+            poi: {
+                name: locationName,
+                classifications: [{ code: locationName as TomLocationCategoryCodeEnum }],
+            },
+        }
+    }
+
+    return base
+}
+
+
+export function reservationPickupLocationToTomLocation(reservation: Reservation): TomLocation {
+    return placeToTomLocation(reservation.pickup, {})
 }
 
 
 export function reservationDestinationLocationToTomLocation(reservation: Reservation): TomLocation {
-    const destinationLocation = reservation.destination
-    const destinationLocationName = destinationLocation.name
-
-    const type = (destinationLocationName && destinationLocationName in POI_CATEGORY_MAPPING) ? TomSearchResultType.POI : TomSearchResultType.POINT_ADDRESS
-    const category = (destinationLocationName && destinationLocationName in POI_CATEGORY_MAPPING) ? POI_CATEGORY_MAPPING[destinationLocationName as TomLocationCategoryCodeEnum] : DEFAULT_LOCATION_CATEGORIES[TomSearchResultType.POINT_ADDRESS]
-
-    return {
-        type,
-        score: 1,
-        id: "",
-        dist: reservation.distance,
-        ...destinationLocation,
-        processedCategory: category
-    }
+    return placeToTomLocation(reservation.destination, { dist: reservation.distance })
 }
 
 
@@ -47,14 +69,10 @@ export function TomLocationToPlace(loc: TomLocation): Place {
     return {
         name: loc.poi?.name ?? loc.address.freeformAddress,
         description: loc.processedCategory.description,
-        address: {
-            freeformAddress: loc.address.freeformAddress,
-            municipality: loc.address.municipality,
-            countryCode: loc.address.countryCode,
-        },
-        position: {
-            lat: loc.position.lat,
-            lon: loc.position.lon,
-        },
+        lat: loc.position.lat,
+        lon: loc.position.lon,
+        freeformAddress: loc.address.freeformAddress,
+        municipality: loc.address.municipality,
+        countryCode: loc.address.countryCode,
     }
 }

@@ -17,10 +17,11 @@
     "wrangler": "^4.90.1"
   },
   "dependencies": {
-    "@fleetgo/shared": "workspace:*",
     "@firebase/app": "^0.14.12",
     "@firebase/firestore": "^4.14.1",
+    "@fleetgo/shared": "workspace:*",
     "@hono/zod-validator": "^0.8.0",
+    "@supabase/supabase-js": "^2.106.0",
     "hono": "^4.12.18",
     "zod": "catalog:"
   }

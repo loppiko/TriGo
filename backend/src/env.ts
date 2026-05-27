@@ -9,6 +9,8 @@ const EnvSchema = z.object({
     FIREBASE_STORAGE_BUCKET: z.string().min(1),
     FIREBASE_MESSAGING_SENDER_ID: z.string().min(1),
     FIREBASE_APP_ID: z.string().min(1),
+    SUPABASE_URL: z.url().min(1),
+    SUPABASE_SERVICE_KEY: z.string().min(1),
 })
 
 
@@ -22,6 +24,10 @@ export const AppConfigSchema = EnvSchema.transform((env) => {
             messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
             appId: env.FIREBASE_APP_ID,
         },
+        supabase: {
+            url: env.SUPABASE_URL,
+            serviceKey: env.SUPABASE_SERVICE_KEY
+        }
     }
 })
 
@@ -30,21 +36,27 @@ export type RawEnv = z.infer<typeof EnvSchema>
 export type AppConfig = z.infer<typeof AppConfigSchema>
 
 
-let appConfig: AppConfig | undefined
+let appConfigInstance: AppConfig | undefined
 
 
-export function getAppConfig(env: RawEnv): Result<AppConfig> {
-    if (!appConfig) {
-        const result = AppConfigSchema.safeParse(env)
-        
-        if (!result.success) {
-            return { success: false, error: result.error.message }
-        }
-
-        appConfig = result.data
-        return { success: true, data: appConfig }
-    } else {
-        return { success: true, data: appConfig }
+/**
+ * This hook should be used only by middlewares functions.
+ */
+export function useAppConfig() {
+    return {
+        init: initAppConfig,
     }
 }
 
+
+function initAppConfig(env: RawEnv): Result<AppConfig> {
+    const result = AppConfigSchema.safeParse(env)
+    
+    if (!result.success) {
+        console.error("[initAppConfig] Failed to initialize app config:", result.error.message)
+        return { success: false, error: result.error.message }
+    }
+
+    appConfigInstance = result.data
+    return { success: true, data: appConfigInstance }
+}

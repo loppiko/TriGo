@@ -5,6 +5,8 @@ export default tseslint.config(
     {
         rules: {
             indent: ['error', 4],
+            "no-fallthrough": "error".
+            "@typescript-eslint/switch-exhaustiveness-check": "error"
         },
     },
 )

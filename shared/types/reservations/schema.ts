@@ -4,16 +4,21 @@ import { PickupTypeEnum, ReservationStatus } from './enums'
 import { RESERVATION_CODE_ALPHABET_SET } from '../../consts/reservations'
 
 
-export const clientDetailsSchema = z.object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    phoneNumber: z.string().min(1),
-})
-
-
+/**
+ * @entity Drivers
+ */
 export const assignedDriverSchema = z.object({
     id: z.string(),
     name: z.string(),
+    phoneNumber: z.string(),
+    createdAt: z.iso.datetime().optional(),
+})
+
+
+
+const clientDetailsSchema = z.object({
+    lastName: z.string(),
+    firstName: z.string(),
     phoneNumber: z.string(),
 })
 
@@ -31,20 +36,20 @@ export const reservationCodeSchema = z.string().length(6).superRefine((data, ctx
 
 
 /**
- * @entity Reservation
+ * @entity Reservations
  */
 export const reservationSchema = z.object({
     id: z.string().optional(),
-    code: reservationCodeSchema,
+    code: reservationCodeSchema.optional(),
 
-    pickupLocation: locationSchema,
+    pickup: locationSchema,
     destination: locationSchema,
     distance: z.number(),
 
-    pickupDate: z.date(),
-    pickupTime: z.iso.time(),
-    pickupType: z.enum(PickupTypeEnum),
     clientDetails: clientDetailsSchema,
+
+    pickupAt: z.iso.datetime(),
+    pickupType: z.enum(PickupTypeEnum),
 
     deleted: z.boolean().optional(),
     status: z.enum(ReservationStatus),
@@ -52,8 +57,8 @@ export const reservationSchema = z.object({
 
     deviceId: z.string().optional(),
     createdBy: z.string().optional(),
-    createdAt: z.date().optional(),
-    updatedAt: z.date().optional(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional(),
 })
 
 
