@@ -2,6 +2,7 @@ import type { ReservationCreationBody } from "../../schemas/routes/reservations"
 import type { User } from "@supabase/supabase-js";
 import { useDrivers } from "../../db/drivers/useDrivers";
 import { useReservations } from "../../db/reservations/useReservations";
+import type { ReservationCreationServiceResult } from "../../types/services/reservations/reservationsReturnTypes";
 
 
 export async function createReservation(userCredentials: User | null, body: ReservationCreationBody): Promise<ReservationCreationServiceResult> {

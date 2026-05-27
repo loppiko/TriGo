@@ -1,3 +1,6 @@
+import type { ServiceResult } from "../serviceReturnTypes";
+
+
 type ReservationsCreationServiceErrors =
   | "NO_DEVICE_ID_AND_CREDENTIALS"
   | "ASSIGNED_DRIVER_NO_CREDENTIALS"
@@ -5,7 +8,7 @@ type ReservationsCreationServiceErrors =
   | "FAILED_TO_CREATE_RESERVATION";
 
 
-type ReservationCreationServiceResult = ServiceResult<
+export type ReservationCreationServiceResult = ServiceResult<
   { reservationCode: string },
   ReservationsCreationServiceErrors
 >;

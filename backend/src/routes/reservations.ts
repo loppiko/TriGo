@@ -29,7 +29,7 @@ export const reservationsRoutes = new Hono<{ Bindings: RawEnv, Variables: HonoVa
                     return c.json("Assigned driver not found", 404)
 
                 case "FAILED_TO_CREATE_RESERVATION":
-                    return c.json("Failed to create reservation", 500)                
+                    return c.json("Failed to create reservation", 500)
             }
         }
     )
