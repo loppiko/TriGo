@@ -1,3 +1,4 @@
+import type { Reservation } from "#shared/types/models/reservations/schema";
 import type { ServiceResult } from "../serviceReturnTypes";
 
 
@@ -11,4 +12,17 @@ type ReservationsCreationServiceErrors =
 export type ReservationCreationServiceResult = ServiceResult<
   { reservationCode: string },
   ReservationsCreationServiceErrors
+>;
+
+
+type ReservationsGetByCodeServiceErrors =
+  | "DEVICE_ID_ACCESS_LIMIT_REACHED"
+  | "RESERVATION_CODE_ACCESS_LIMIT_REACHED"
+  | "INVALID_CODE_OR_PHONE_NUMBER"
+  | "FAILED_TO_GET_RESERVATION";
+
+
+export type ReservationGetByCodeServiceResult = ServiceResult<
+  { reservation: Reservation },
+  ReservationsGetByCodeServiceErrors
 >;

@@ -1,7 +1,7 @@
 import { z } from 'zod/v4'
 import { locationSchema } from '../location/schema'
 import { PickupTypeEnum, ReservationStatus } from './enums'
-import { RESERVATION_CODE_ALPHABET_SET } from '../../consts/reservations'
+import { RESERVATION_CODE_ALPHABET_SET } from '../../../consts/reservations'
 
 
 /**
@@ -15,11 +15,34 @@ export const assignedDriverSchema = z.object({
 })
 
 
+export const phoneNumberSchema = z.string().superRefine((data, ctx) => {
+    if (!data.startsWith('+')) {
+        ctx.addIssue({
+            code: 'custom',
+            message: 'Phone number must start with +',
+        })
+    }
+
+    if (data.length > 15) {
+        ctx.addIssue({
+            code: 'custom',
+            message: 'Phone number must be less than 15 characters long',
+        })
+    }
+    
+    if (data.startsWith('+48') && data.length !== 12) {
+        ctx.addIssue({
+            code: 'custom',
+            message: 'Polish phone numbers must contain 11 digits',
+        })
+    }
+})
+
 
 const clientDataSchema = z.object({
     lastName: z.string(),
     firstName: z.string(),
-    phoneNumber: z.string(),
+    phoneNumber: phoneNumberSchema,
 })
 
 

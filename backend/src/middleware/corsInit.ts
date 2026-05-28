@@ -1,5 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import type { HonoVariables } from "..";
+import { apiResponse } from "../types/core";
 
 
 export function corsInitMiddleware(): MiddlewareHandler<{ Variables: HonoVariables }> {
@@ -9,7 +10,7 @@ export function corsInitMiddleware(): MiddlewareHandler<{ Variables: HonoVariabl
         c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
         if (c.req.method === 'OPTIONS') {
-            return c.json(null, 200)
+            return c.json(apiResponse.success(null), 200)
         }
 
         return next()

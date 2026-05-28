@@ -1,6 +1,6 @@
 import type { Result } from "#shared/types/core";
 import { getSupabaseClient } from "../supabase";
-import type { Driver } from '#shared/types/drivers/schema'
+import type { Driver } from '@fleetgo/shared/types/models/drivers/schema'
 
 
 export function useDrivers() {

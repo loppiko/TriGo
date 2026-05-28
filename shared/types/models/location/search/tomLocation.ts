@@ -1,4 +1,4 @@
-import { DEFAULT_LOCATION_CATEGORIES, POI_CATEGORY_MAPPING } from '../../../consts/geolocation/poiCategoriesMapping'
+import { DEFAULT_LOCATION_CATEGORIES, POI_CATEGORY_MAPPING } from '../../../../consts/geolocation/poiCategoriesMapping'
 import type { Reservation } from '../../reservations/schema'
 import type { Place } from '../schema'
 import { TomSearchResultType, TomLocationCategoryCodeEnum } from './enum'

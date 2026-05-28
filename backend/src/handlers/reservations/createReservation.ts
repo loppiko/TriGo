@@ -11,7 +11,7 @@ export async function createReservation(userCredentials: User | null, body: Rese
     if (!userCredentials && !body.deviceId) {
         console.warn('[createReservation] No device id and credentials provided')
         return {
-            ok: false,
+            success: false,
             error: "NO_DEVICE_ID_AND_CREDENTIALS",
         }
     }
@@ -19,7 +19,7 @@ export async function createReservation(userCredentials: User | null, body: Rese
     if (!userCredentials && body.assignedDriver) {
         console.warn('[createReservation] No credentials provided for assigned driver')
         return {
-            ok: false,
+            success: false,
             error: "ASSIGNED_DRIVER_NO_CREDENTIALS",
         }
     }
@@ -29,7 +29,7 @@ export async function createReservation(userCredentials: User | null, body: Rese
         if (!driver.success) {
             console.warn('[createReservation] Failed to get driver', driver.error)
             return {
-                ok: false,
+                success: false,
                 error: "ASSIGNED_DRIVER_NOT_FOUND",
             }
         }
@@ -43,13 +43,13 @@ export async function createReservation(userCredentials: User | null, body: Rese
     if (!result.success) {
         console.warn('[createReservation] Failed to create reservation', result.error)
         return {
-            ok: false,
+            success: false,
             error: "FAILED_TO_CREATE_RESERVATION",
         }
     }
 
     return {
-        ok: true,
+        success: true,
         data: {
             reservationCode: result.data.reservationCode,
         },

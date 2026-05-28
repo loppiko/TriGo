@@ -46,7 +46,7 @@ export type Database = {
           countryCode: string
           createdAt: string
           description: string
-          freeFormAddress: string
+          freeformAddress: string
           id: string
           lat: number
           lon: number
@@ -56,7 +56,7 @@ export type Database = {
           countryCode: string
           createdAt?: string
           description: string
-          freeFormAddress: string
+          freeformAddress: string
           id?: string
           lat: number
           lon: number
@@ -66,7 +66,7 @@ export type Database = {
           countryCode?: string
           createdAt?: string
           description?: string
-          freeFormAddress?: string
+          freeformAddress?: string
           id?: string
           lat?: number
           lon?: number
@@ -74,7 +74,7 @@ export type Database = {
         }
         Relationships: []
       }
-      "Reservation-Clients": {
+      "Reservation-ClientData": {
         Row: {
           createdAt: string
           deviceId: string | null
@@ -159,7 +159,7 @@ export type Database = {
             foreignKeyName: "Reservations_clientData_fkey"
             columns: ["clientData"]
             isOneToOne: false
-            referencedRelation: "Reservation-Clients"
+            referencedRelation: "Reservation-ClientData"
             referencedColumns: ["id"]
           },
           {
@@ -184,6 +184,10 @@ export type Database = {
     }
     Functions: {
       createReservation: { Args: { payload: Json }; Returns: Json }
+      getReservationByCodeAndPhoneNumber: {
+        Args: { phonenumber: string; reservationcode: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

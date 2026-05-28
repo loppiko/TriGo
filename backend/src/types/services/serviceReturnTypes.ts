@@ -1,3 +1,3 @@
 export type ServiceResult<T, E> =
-  | { ok: true; data: T }
-  | { ok: false; error: E };
+  | { success: true; data: T }
+  | { success: false; error: E };

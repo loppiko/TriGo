@@ -1,5 +1,5 @@
 import { z } from "zod/v4"
-import { reservationCodeSchema, reservationSchema } from "#shared/types/reservations/schema"
+import { phoneNumberSchema, reservationCodeSchema, reservationSchema } from "#shared/types/models/reservations/schema"
 
 
 export const reservationCodeParamSchema = z.object({
@@ -17,4 +17,13 @@ export const reservationCreationBodySchema = reservationSchema.omit({
 })
 
 
+
+export const reservationGetByCodeBodySchema = z.object({
+    code: reservationCodeSchema,
+    phoneNumber: phoneNumberSchema,
+    deviceId: z.uuidv4()
+})
+
+
 export type ReservationCreationBody = z.infer<typeof reservationCreationBodySchema>
+export type ReservationGetByCodeBody = z.infer<typeof reservationGetByCodeBodySchema>
