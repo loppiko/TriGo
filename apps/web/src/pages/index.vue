@@ -74,7 +74,7 @@ function buildReservationFromWizardState(): Result<Reservation> {
         return { success: false, error: 'Invalid pickupAt' }
     }
 
-    const normalizedPhone = phoneNumberDraft.value.replace(/\s/g, '')
+    const normalizedPhone = finalPhoneNumber.value.replace(/\s/g, '')
 
     const candidate: Reservation = {
         pickup: TomLocationToPlace(pickup),

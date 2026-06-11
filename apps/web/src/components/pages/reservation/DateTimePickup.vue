@@ -113,7 +113,9 @@ const showDateError = computed(() => {
     if (phase2Parse.value.success) {
         return false
     }
-    if (dateTouched.value && timeTouched.value && !phase2Parse.value.success) {
+    if (dateTouched.value && timeTouched.value && !phase2Parse.value.success && phase2Parse.value.error.issues.some((issue) =>
+        issue.path[0] === 'pickupAt',
+    )) {
         return true
     }
     return false
