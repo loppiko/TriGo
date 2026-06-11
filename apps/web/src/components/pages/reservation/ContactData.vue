@@ -1,20 +1,27 @@
 <script lang="ts">
+import { phoneNumberSchema } from '#shared/types/models/reservations/schema';
 import { z } from 'zod'
+import { COUNTRY_CODES, type CountryCode } from '~/utils/ui/countryCodes'
 
 
 export const phase3Schema = z.object({
     firstName: z.string().min(1, 'Podaj imię').max(100, 'Imię jest za długie'),
     lastName: z.string().min(1, 'Podaj nazwisko').max(100, 'Nazwisko jest za długie'),
-    phoneNumber: z.string()
-        .min(9, 'Numer telefonu musi mieć co najmniej 9 cyfr')
-        .regex(/^[\d\s+-]+$/, 'Podaj prawidłowy numer telefonu'),
+    phoneNumber: phoneNumberSchema,
 })
 </script>
 
 <script setup lang="ts">
+
+const isStepValid = defineModel<boolean>('isStepValid', { required: true })
 const firstName = defineModel<string>('firstName', { required: true })
 const lastName = defineModel<string>('lastName', { required: true })
 const phoneNumber = defineModel<string>('phoneNumber', { required: true })
+const selectedCountry = defineModel<CountryCode>('selectedCountry', { required: true })
+const finalPhoneNumber = defineModel<string>('finalPhoneNumber', { required: true })
+
+const phoneNumberFocused = ref(false)
+const phoneNumberError = ref("")
 
 
 defineProps<{
@@ -25,6 +32,33 @@ defineProps<{
 defineEmits<{
     goToSummary: []
 }>()
+
+
+const filteredCountries = computed(() => {
+    const q = selectedCountry.value.countryName.toLowerCase()
+    if (!q) return COUNTRY_CODES
+    return COUNTRY_CODES.filter(
+        (c) => c.countryName.toLowerCase().includes(q) || c.dial.includes(q),
+    )
+})
+
+
+watch(
+    [selectedCountry, phoneNumber],
+    ([country, phone]) => {
+        const parseResult = phoneNumberSchema.safeParse(`${country.dial}${phone}`)
+
+        if (parseResult.success) {
+            finalPhoneNumber.value = parseResult.data;
+            phoneNumberError.value = "";
+            isStepValid.value = true;
+        } else if (phoneNumberFocused.value) {
+            phoneNumberError.value = (parseResult.error.issues[0]?.message || "");
+            isStepValid.value = false;
+        }
+    },
+    { immediate: true },
+)
 </script>
 
 <template>
@@ -38,18 +72,79 @@ defineEmits<{
           Dane kontaktowe
         </p>
       </div>
+
       <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4 shadow-sm">
         <div>
           <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Imię</label>
           <UInput v-model="firstName" placeholder="np. Jan" icon="i-lucide-user" class="w-full" />
         </div>
+
         <div>
           <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Nazwisko</label>
           <UInput v-model="lastName" placeholder="np. Kowalski" icon="i-lucide-user" class="w-full" />
         </div>
+
         <div>
           <label class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5 block">Numer telefonu</label>
-          <UInput v-model="phoneNumber" type="tel" placeholder="np. 123 456 789" icon="i-lucide-phone" class="w-full" />
+          <div class="flex gap-2">
+            <!-- Country code dropdown -->
+            <UPopover :content="{ side: 'bottom', align: 'start' }">
+              <UButton
+                color="neutral"
+                variant="outline"
+                class="shrink-0 min-w-[90px] justify-between font-mono text-sm"
+                trailing-icon="i-lucide-chevron-down"
+              >
+                <img :src="selectedCountry.image" :alt="selectedCountry.countryName" class="size-4" >
+                <span class="font-mono">{{ selectedCountry.dial }}</span>
+              </UButton>
+
+              <template #content>
+                <div class="w-48 p-2">
+                  <UInput
+                    v-model="selectedCountry.countryName"
+                    placeholder="Szukaj kraju..."
+                    icon="i-lucide-search"
+                    size="sm"
+                    class="mb-2"
+                    autofocus
+                  />
+                  <ul class="max-h-52 overflow-y-auto space-y-0.5">
+                    <li
+                      v-for="country in filteredCountries"
+                      :key="country.code"
+                      class="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                      :class="selectedCountry.code === country.code ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700 dark:text-gray-300'"
+                      @click="selectedCountry = country;"
+                    >
+                      <img :src="country.image" :alt="country.countryName" class="size-4" >
+                      <span class="font-mono">{{ country.dial }}</span>
+                      <span class="text-gray-400 dark:text-gray-500 text-xs">{{ country.countryName }}</span>
+                    </li>
+                    <li v-if="filteredCountries.length === 0" class="px-2 py-2 text-sm text-gray-400 text-center">
+                      Brak wyników
+                    </li>
+                  </ul>
+                </div>
+              </template>
+            </UPopover>
+
+            <!-- Local number input -->
+            <UInput
+              v-model="phoneNumber"
+              type="tel"
+              placeholder="123 456 789"
+              icon="i-lucide-phone"
+              class="flex-1"
+              :color="phoneNumberError ? 'error' : 'primary'"
+              :highlight="!!phoneNumberError"
+              inputmode="numeric"
+              @blur="phoneNumberFocused = true"
+            />
+          </div>
+          <p v-if="phoneNumberError" class="text-left text-xs text-error mt-1.5">
+            {{ phoneNumberError }}
+          </p>
         </div>
       </div>
     </section>

@@ -1,102 +1,61 @@
 <script lang="ts">
 import { z } from 'zod'
-import { PickupTypeEnum } from '#shared/types/reservations/enums'
+import { PickupTypeEnum } from '#shared/types/models/reservations/enums'
 import { pickupTypeOptions } from '~/utils/ui/reservations'
+import type { Result } from '#shared/types/core'
+import { dateTimeSchema, type DateTime } from '#shared/types/models/reservations/schema'
 
 
 type PickupTypeValue = (typeof pickupTypeOptions)[number]['value']
 
 
+const dateErrorMessage: string = "Data nie może być z przeszłości."
+
+
 /**
- * Parses an HTML `input[type="date"]` value (`YYYY-MM-DD`) into a local calendar date.
+ * Builds an ISO datetime string from HTML date and time input values.
  */
-export function parseHtmlDateToLocalDate(isoDate: string): Date | null {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
-        return null
+export function buildPickupAtIso(rideDate: string, rideTime: string): Result<DateTime> {
+    const trimmedDate = rideDate.trim()
+    const trimmedTime = rideTime.trim()
+
+    if (!trimmedDate && !trimmedTime) {
+        return { success: false, error: 'Invalid ride date and time' }
     }
 
-    const parts = isoDate.split('-').map(Number)
-    const year = parts[0]
-    const month = parts[1]
-    const day = parts[2]
-    if (year == null || month == null || day == null) {
-        return null
+    const date = z.iso.date().safeParse(trimmedDate)
+    if (!date.success) {
+        return { success: false, error: 'Invalid ride date' }
     }
-    return new Date(year, month - 1, day)
+
+    const timeParse = z.iso.time().safeParse(trimmedTime)
+    if (!timeParse.success) {
+        return { success: false, error: 'Invalid ride time' }
+    }
+
+    const datetime = dateTimeSchema.safeParse(new Date(`${date.data}T${timeParse.data}`).toISOString())
+    if (!datetime.success) {
+        return { success: false, error: 'Invalid datetime' }
+    }
+
+    return { success: true, data: datetime.data }
 }
-
-
-/**
- * Returns local midnight for the given instant’s calendar day (same interpretation as HTML date inputs).
- */
-function startOfLocalCalendarDay(d: Date): Date {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate())
-}
-
-
-/**
- * Combines a local calendar date (from `type="date"`) with an ISO time string (`type="time"`, np. `14:30`).
- */
-function buildLocalPickupAt(rideDate: Date, rideTime: string): Date {
-    const parts = rideTime.trim().split(':').map((x) => Number(x))
-    const hours = parts[0] ?? 0
-    const minutes = parts[1] ?? 0
-    const seconds = parts[2] ?? 0
-    return new Date(
-        rideDate.getFullYear(),
-        rideDate.getMonth(),
-        rideDate.getDate(),
-        hours,
-        minutes,
-        seconds,
-        0,
-    )
-}
-
-
-/**
- * `UInput` `type="date"` supplies `YYYY-MM-DD` strings; we parse to the same local {@link Date} used for {@link reservationSchema} `pickupDate`.
- */
-const phase2RideDateSchema = z
-    .string()
-    .trim()
-    .min(1, 'Wybierz datę przejazdu')
-    .refine((s) => parseHtmlDateToLocalDate(s) !== null, { message: 'Wybierz datę przejazdu' })
-    .transform((s) => parseHtmlDateToLocalDate(s)!)
 
 
 export const phase2Schema = z.object({
-    rideDate: phase2RideDateSchema,
-    rideTime: z.iso.time().min(1, 'Wybierz godzinę przejazdu'),
+    pickupAt: z.iso.datetime({ message: 'Wybierz datę i godzinę przejazdu' }),
     pickupType: z.enum(PickupTypeEnum),
 }).superRefine((data, ctx) => {
-    const pickupAt = buildLocalPickupAt(data.rideDate, data.rideTime)
+    const pickupAt = new Date(data.pickupAt)
     const now = new Date()
-    if (pickupAt.getTime() >= now.getTime()) {
-        return
-    }
 
-    const todayStart = startOfLocalCalendarDay(now)
-    const selectedStart = startOfLocalCalendarDay(data.rideDate)
-    if (selectedStart.getTime() < todayStart.getTime()) {
+    if (pickupAt.getTime() > now.getTime()) {
+        return
+    } else {
         ctx.addIssue({
             code: "custom",
-            message: 'Data nie może być z przeszłości.',
-            path: ['rideDate'],
-        })
-    }
-    else if (selectedStart.getTime() === todayStart.getTime()) {
-        ctx.addIssue({
-            code: "custom",
-            message: 'Godzina nie może być w przeszłości.',
-            path: ['rideTime'],
-        })
-    }
-    else {
-        ctx.addIssue({
-            code: "custom",
-            message: 'Wybrany termin już minął.',
-            path: ['rideDate'],
+            message: dateErrorMessage,
+            path: ['pickupAt'],
         })
     }
 })
@@ -106,24 +65,44 @@ export const phase2Schema = z.object({
 const rideDate = defineModel<string>('rideDate', { required: true })
 const rideTime = defineModel<string>('rideTime', { required: true })
 const pickupType = defineModel<PickupTypeValue | null>('pickupType', { required: true })
+const isStepValid = defineModel<boolean>('isStepValid', { required: true })
 
+const dateTouched = ref(false)
+const timeTouched = ref(false)
 
 defineProps<{
     customClass?: string
 }>()
 
 
-defineEmits<{
+const emit = defineEmits<{
     goToSummary: []
+    pickupAtUpdated: [string]
 }>()
 
 
+onMounted(() => {
+    if (rideDate.value && rideTime.value) {
+        dateTouched.value = true
+        timeTouched.value = true
+    }
+})
+
+
 function parse2Step() {
-    return phase2Schema.safeParse({
-        rideDate: rideDate.value,
-        rideTime: rideTime.value,
+    const pickupAtResult = buildPickupAtIso(rideDate.value, rideTime.value)
+    
+    const parsedResult = phase2Schema.safeParse({
+        pickupAt: pickupAtResult.success ? pickupAtResult.data : '',
         pickupType: pickupType.value,
     })
+
+    if (pickupAtResult.success) {
+        emit('pickupAtUpdated', pickupAtResult.data)
+    }
+
+    isStepValid.value = parsedResult.success
+    return parsedResult
 }
 
 
@@ -131,43 +110,14 @@ const phase2Parse = computed(() => parse2Step())
 
 
 const showDateError = computed(() => {
-    if (!rideDate.value) {
-        return false
-    }
     if (phase2Parse.value.success) {
         return false
     }
-    return phase2Parse.value.error.issues.some((issue) => issue.path[0] === 'rideDate')
+    if (dateTouched.value && timeTouched.value && !phase2Parse.value.success) {
+        return true
+    }
+    return false
 })
-
-
-const showTimeError = computed(() => {
-    if (!rideTime.value) {
-        return false
-    }
-    if (phase2Parse.value.success) {
-        return false
-    }
-    return phase2Parse.value.error.issues.some((issue) => issue.path[0] === 'rideTime')
-})
-
-
-/**
- * Returns the first Zod error message for a phase-2 field (inline text under the input).
- */
-function phase2FieldMessage(pathKey: 'rideDate' | 'rideTime'): string {
-    if (pathKey === 'rideDate' && !rideDate.value) {
-        return ''
-    }
-    if (pathKey === 'rideTime' && !rideTime.value) {
-        return ''
-    }
-    const parsed = phase2Parse.value
-    if (parsed.success) {
-        return ''
-    }
-    return parsed.error.issues.find((issue) => issue.path[0] === pathKey)?.message ?? ''
-}
 </script>
 
 <template>
@@ -192,12 +142,13 @@ function phase2FieldMessage(pathKey: 'rideDate' | 'rideTime'): string {
               class="w-full"
               :color="showDateError ? 'error' : 'primary'"
               :highlight="showDateError"
+              @blur="dateTouched = true"
             />
             <p
               v-show="showDateError"
               class="text-left text-xs text-error mt-1.5"
             >
-              {{ phase2FieldMessage('rideDate') }}
+              {{ dateErrorMessage }}
             </p>
           </div>
           <div>
@@ -207,14 +158,15 @@ function phase2FieldMessage(pathKey: 'rideDate' | 'rideTime'): string {
               type="time"
               icon="i-lucide-clock"
               class="w-full"
-              :color="showTimeError ? 'error' : 'primary'"
-              :highlight="showTimeError"
+              :color="showDateError ? 'error' : 'primary'"
+              :highlight="showDateError"
+              @blur="timeTouched = true"
             />
             <p
-              v-show="showTimeError"
+              v-show="showDateError"
               class="text-left text-xs text-error mt-1.5"
             >
-              {{ phase2FieldMessage('rideTime') }}
+              {{ dateErrorMessage }}
             </p>
           </div>
         </div>

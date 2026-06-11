@@ -38,6 +38,12 @@ export async function getRequest(url: string, queryParams?: Record<string, strin
             data: response,
         }
     } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError' && abortController?.signal.aborted) return {
+            success: false,
+            errorCode: 408,
+            errorMessage: 'Request aborted',
+            errorData: {},
+        }
         console.error('[getRequest] Error:', error)
         throw error
     }

@@ -1,4 +1,4 @@
-import { PickupTypeEnum } from "#shared/types/reservations/enums";
+import { PickupTypeEnum } from "#shared/types/models/reservations/enums";
 
 export const pickupTypeOptions = [
     {

@@ -1,14 +1,14 @@
 import { computed, reactive, type Ref } from 'vue'
 import { getRequest } from '~/utils/useRequestBuilder'
-import { ENUM_JSDOC_FILTERED_FUZZY_TYPES } from '#shared/types/location/search/enum'
-import { fuzzyResultToProcessed } from '#shared/types/location/search/fuzzyResults'
+import { ENUM_JSDOC_FILTERED_FUZZY_TYPES } from '#shared/types/models/location/search/enum'
+import { fuzzyResultToProcessed } from '#shared/types/models/location/search/fuzzyResults'
 import {
     fuzzyResponseSchema,
     fuzzyResultSchema,
     type TomSearchResult as LocationFuzzyResult,
     type TomLocation,
-} from '#shared/types/location/search/schema'
-import { locationCoordinatesSchema, type PlaceCoordinates } from '#shared/types/location/schema'
+} from '#shared/types/models/location/search/schema'
+import { locationCoordinatesSchema, type PlaceCoordinates } from '#shared/types/models/location/schema'
 
 
 /**

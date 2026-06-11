@@ -39,7 +39,7 @@ const navigationItems: NavigationMenuItem[] = [
           highlight-color="primary"
           class="w-full justify-end min-[850px]:justify-center"
           :ui="{
-            link: 'px-3 py-2 rounded-none gap-0 min-[850px]:gap-2 after:h-[2px]',
+            link: 'px-3 py-2 rounded-none gap-0 min-[850px]:gap-2 after:h-[2px] group',
             linkLeadingIcon: 'hidden',
             linkLabel: 'font-medium text-sm',
           }"
@@ -51,8 +51,11 @@ const navigationItems: NavigationMenuItem[] = [
             >
               <UIcon
                 :name="(item.icon as string)"
-                class="size-4 transition-colors duration-200"
-                :class="active ? 'text-white' : 'text-gray-400 dark:text-gray-500'"
+                class="size-4 transition-transform duration-300"
+                :class="[
+                  active ? 'text-white' : 'text-gray-400 dark:text-gray-500',
+                  item.icon === 'i-lucide-car' ? 'nav-icon-car' : 'nav-icon-up',
+                ]"
               />
             </span>
           </template>
@@ -72,3 +75,23 @@ const navigationItems: NavigationMenuItem[] = [
     </main>
   </div>
 </template>
+
+<style scoped>
+/* Car: slides right on hover, returns on blur */
+.nav-icon-car {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.group:hover .nav-icon-car {
+  transform: translateX(2px);
+}
+
+/* Info & search: bounce up on hover, return on blur */
+.nav-icon-up {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.group:hover .nav-icon-up {
+  transform: translateY(-2px);
+}
+</style>

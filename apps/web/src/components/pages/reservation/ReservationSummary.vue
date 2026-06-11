@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { TomLocation } from '#shared/types/location/search/schema'
-import { PickupTypeEnum } from '#shared/types/reservations/enums'
+import type { TomLocation } from '#shared/types/models/location/search/schema'
+import { PickupTypeEnum } from '#shared/types/models/reservations/enums'
+import type { DateTime } from '#shared/types/models/reservations/schema';
 
 
 const props = defineProps<{
     pickupLocation: TomLocation | undefined
     destination: TomLocation | undefined
-    rideDate: string
-    rideTime: string
+    pickupAt: DateTime
     pickupType: PickupTypeEnum | null
     firstName: string
     lastName: string
@@ -41,13 +41,22 @@ function locationDisplayLabel(location: TomLocation | undefined): string {
 }
 
 
-function formatDate(dateStr: string): string {
-    if (!dateStr) return ''
-    return new Date(dateStr).toLocaleDateString('pl-PL', {
+function formatDateFromPickupAt(pickupAt: DateTime): string {
+    if (!pickupAt) return ''
+    return new Date(pickupAt).toLocaleDateString('pl-PL', {
         weekday: 'long',
         day: 'numeric',
-        month: 'long',
+        month: 'numeric',
         year: 'numeric',
+    })
+}
+
+
+function formatTimeFromPickupAt(pickupAt: DateTime): string {
+    if (!pickupAt) return ''
+    return new Date(pickupAt).toLocaleTimeString('pl-PL', {
+        hour: '2-digit',
+        minute: '2-digit',
     })
 }
 
@@ -117,10 +126,10 @@ const pickupTypeIcon = computed(() =>
             <div class="min-w-0 flex-1">
               <p class="text-xs text-gray-500 dark:text-gray-400">Termin</p>
               <p class="text-sm font-semibold text-gray-900 dark:text-white capitalize">
-                {{ formatDate(rideDate) }}
+                {{ formatDateFromPickupAt(pickupAt) }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                Godzina: {{ rideTime }}
+                Godzina: {{ formatTimeFromPickupAt(pickupAt) }}
               </p>
             </div>
             <UButton

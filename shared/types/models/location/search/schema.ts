@@ -8,8 +8,8 @@ import { locationCoordinatesSchema } from '../schema'
  */
 const fuzzyAddressSchema = z.object({
     freeformAddress: z.string(),
-    municipality: z.string(),
-    countryCode: z.string(),
+    municipality: z.string().optional(),
+    countryCode: z.string().optional(),
 })
 
 

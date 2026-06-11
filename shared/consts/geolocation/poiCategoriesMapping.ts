@@ -1,4 +1,4 @@
-import { TomSearchResultType, TomLocationCategoryCodeEnum } from "../../types/location/search/enum"
+import { TomSearchResultType, TomLocationCategoryCodeEnum } from "../../types/models/location/search/enum"
 
 
 export const POI_CATEGORY_MAPPING: Record<TomLocationCategoryCodeEnum, { icon: string; description: string }> = {

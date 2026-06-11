@@ -4,6 +4,9 @@ import { PickupTypeEnum, ReservationStatus } from './enums'
 import { RESERVATION_CODE_ALPHABET_SET } from '../../../consts/reservations'
 
 
+export const dateTimeSchema = z.iso.datetime();
+
+
 /**
  * @entity Drivers
  */
@@ -11,7 +14,7 @@ export const assignedDriverSchema = z.object({
     id: z.string(),
     name: z.string(),
     phoneNumber: z.string(),
-    createdAt: z.iso.datetime().optional(),
+    createdAt: dateTimeSchema.optional(),
 })
 
 
@@ -26,20 +29,20 @@ export const phoneNumberSchema = z.string().superRefine((data, ctx) => {
     if (data.length > 15) {
         ctx.addIssue({
             code: 'custom',
-            message: 'Phone number must be less than 15 characters long',
+            message: 'Phone number must be less than 13 characters long',
         })
     }
     
     if (data.startsWith('+48') && data.length !== 12) {
         ctx.addIssue({
             code: 'custom',
-            message: 'Polish phone numbers must contain 11 digits',
+            message: 'Polish phone numbers must contain 9 digits',
         })
     }
 })
 
 
-const clientDataSchema = z.object({
+export const clientDataSchema = z.object({
     lastName: z.string(),
     firstName: z.string(),
     phoneNumber: phoneNumberSchema,
@@ -71,7 +74,7 @@ export const reservationSchema = z.object({
 
     clientData: clientDataSchema,
 
-    pickupAt: z.iso.datetime(),
+    pickupAt: dateTimeSchema,
     pickupType: z.enum(PickupTypeEnum),
 
     deleted: z.boolean().optional(),
@@ -80,9 +83,10 @@ export const reservationSchema = z.object({
 
     deviceId: z.string().optional(),
     createdBy: z.string().optional(),
-    createdAt: z.iso.datetime().optional(),
-    updatedAt: z.iso.datetime().optional(),
+    createdAt: dateTimeSchema.optional(),
+    updatedAt: dateTimeSchema.optional(),
 })
 
 
 export type Reservation = z.infer<typeof reservationSchema>
+export type DateTime = z.infer<typeof dateTimeSchema>

@@ -1,21 +1,24 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { Result } from '#shared/types/core'
-import { TomLocationSchema, type TomLocation } from '#shared/types/location/search/schema'
-import { reservationSchema, type Reservation } from '#shared/types/reservations/schema'
+import { TomLocationSchema, type TomLocation } from '#shared/types/models/location/search/schema'
+import { reservationSchema, type Reservation } from '#shared/types/models/reservations/schema'
 import { errorNotification, infoNotification } from '~/utils/notifications/toast'
 import LocationSearchInput from '~/components/shared/LocationSeachInput/LocationSearchInput.vue'
-import { ReservationStatus } from '#shared/types/reservations/enums'
-import type { PickupTypeEnum } from '#shared/types/reservations/enums'
+import { ReservationStatus } from '#shared/types/models/reservations/enums'
+import type { PickupTypeEnum } from '#shared/types/models/reservations/enums'
+import { TomLocationToPlace } from '#shared/types/models/location/search/tomLocation'
 import { useReservations } from '~/composables/database/reservations/useReservations'
-import { TomLocationToPlace } from '#shared/types/location/search/tomLocation'
-import DateTimePickup, { parseHtmlDateToLocalDate, phase2Schema } from '~/components/pages/reservation/DateTimePickup.vue'
-import ContactData, { phase3Schema } from '~/components/pages/reservation/ContactData.vue'
+
+import DateTimePickup from '~/components/pages/reservation/DateTimePickup.vue'
+import ContactData from '~/components/pages/reservation/ContactData.vue'
 import ReservationSummary from '~/components/pages/reservation/ReservationSummary.vue'
 import Map from '~/components/shared/Map/Map.vue'
 import ContinueButton from '~/components/shared/buttons/ContinueButton.vue'
 import SummaryButton from '~/components/shared/buttons/SummaryButton.vue'
 import ReservationButton from '~/components/shared/buttons/ReservationButton.vue'
+import ReservationCodeBadge from '~/components/shared/ReservationCode/ReservationCodeBadge.vue'
+import { DEFAULT_COUNTRY_CODE, type CountryCode } from '~/utils/ui/countryCodes'
 
 const mapRef = ref<InstanceType<typeof Map> | null>(null)
 
@@ -28,19 +31,29 @@ const RESERVATION_INTERNAL_ERROR_TITLE = 'Nieudało się wykonać rezerwacji'
 const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
   'Wystąpił wewnętrzny błąd aplikacji, prosimy skontaktuj się z nami.'
 
+// Step 1
 const pickupLocation = ref<TomLocation | undefined>()
 const destination = ref<TomLocation | undefined>()
 const distance = ref<number>(0)
-const rideDate = ref('')
-const rideTime = ref('')
+
+// Step 2
+const rideDateDraft = ref('')
+const rideTimeDraft = ref('')
 const pickupType = ref<PickupTypeEnum | null>(null)
+const pickupAt = ref('')
+
+// Step 3
 const firstName = ref('')
 const lastName = ref('')
-const phoneNumber = ref('')
+const selectedCountry = ref<CountryCode>(DEFAULT_COUNTRY_CODE)
+const phoneNumberDraft = ref('')
+const finalPhoneNumber = ref('')
 
 const step = ref(1)
 const showSuccess = ref(false)
 const isReservationSubmitting = ref(false)
+
+const reservationCode = ref<string | undefined>()
 
 
 /**
@@ -51,33 +64,23 @@ function buildReservationFromWizardState(): Result<Reservation> {
     const dest = destination.value
     const type = pickupType.value
 
-    if (!pickup || !dest || type == null) {
+    if (!pickup || !dest || type == null || !dest.dist) {
         console.error('[buildReservationFromWizardState] Missing required wizard fields')
         return { success: false, error: 'Missing required wizard fields' }
     }
 
-    const pickupDate = parseHtmlDateToLocalDate(rideDate.value.trim())
-    if (!pickupDate) {
-        console.error('[buildReservationFromWizardState] Invalid ride date:', rideDate.value)
-        return { success: false, error: 'Invalid ride date' }
+    if (!pickupAt.value) {
+        console.error('[buildReservationFromWizardState] Invalid pickupAt')
+        return { success: false, error: 'Invalid pickupAt' }
     }
 
-    const trimmedTime = rideTime.value.trim()
-    if (!trimmedTime) {
-        console.error('[buildReservationFromWizardState] Empty ride time')
-        return { success: false, error: 'Empty ride time' }
-    }
-
-    const normalizedPhone = phoneNumber.value.replace(/\s/g, '')
-
-    const timeParts = trimmedTime.split(':')
-    pickupDate.setHours(Number(timeParts[0]), Number(timeParts[1]), 0, 0)
+    const normalizedPhone = phoneNumberDraft.value.replace(/\s/g, '')
 
     const candidate: Reservation = {
         pickup: TomLocationToPlace(pickup),
         destination: TomLocationToPlace(dest),
-        distance: dest.dist!,
-        pickupAt: pickupDate.toISOString(),
+        distance: dest.dist,
+        pickupAt: pickupAt.value,
         pickupType: type,
         clientData: {
             lastName: lastName.value.trim(),
@@ -107,6 +110,7 @@ watch(destination, (newVal) => {
     if (!newVal) return
     mapRef.value?.flyTo(newVal.position.lat, newVal.position.lon, 'destination')
 })
+
 
 const phase1Schema = z.object({
     pickupLocation: TomLocationSchema,
@@ -140,23 +144,8 @@ const isStep1Valid = computed(() =>
 )
 
 
-const isStep2Valid = computed(() =>
-    phase2Schema.safeParse({
-        rideDate: rideDate.value,
-        rideTime: rideTime.value,
-        pickupType: pickupType.value,
-    }).success,
-)
-
-
-const isStep3Valid = computed(() =>
-    phase3Schema.safeParse({
-        firstName: firstName.value.trim(),
-        lastName: lastName.value.trim(),
-        phoneNumber: phoneNumber.value.replace(/\s/g, ''),
-    }).success,
-)
-
+const isStep2Valid = ref<boolean>(false)
+const isStep3Valid = ref<boolean>(false)
 
 const steps4Visited = ref<boolean>(false)
 
@@ -188,27 +177,16 @@ function validateAndAdvance() {
         step.value = 2
     }
     else if (step.value === 2) {
-        const result = phase2Schema.safeParse({
-            rideDate: rideDate.value,
-            rideTime: rideTime.value,
-            pickupType: pickupType.value,
-        })
-        if (!result.success) {
-            const firstError = result.error.issues[0]?.message ?? 'Uzupełnij wymagane pola'
-            infoNotification('Popraw błędy w formularzu', firstError)
+        console.log('isStep2Valid', isStep2Valid.value)
+        if (!isStep2Valid.value) {
+            infoNotification('Popraw błędy w formularzu', 'Uzupełnij wymagane pola')
             return
         }
         step.value = 3
     }
     else if (step.value === 3) {
-        const result = phase3Schema.safeParse({
-            firstName: firstName.value.trim(),
-            lastName: lastName.value.trim(),
-            phoneNumber: phoneNumber.value.replace(/\s/g, ''),
-        })
-        if (!result.success) {
-            const firstError = result.error.issues[0]?.message ?? 'Uzupełnij wymagane pola'
-            infoNotification('Popraw błędy w formularzu', firstError)
+        if (!isStep3Valid.value) {
+            infoNotification('Popraw błędy w formularzu', 'Uzupełnij wymagane pola')
             return
         }
         step.value = 4
@@ -234,6 +212,10 @@ function handleDistanceUpdated(dist: number): void {
     }
 }
 
+
+function handlePickupAtUpdated(newPickupAt: string): void {
+    pickupAt.value = newPickupAt
+}
 
 /**
  * Validates wizard state into a reservation payload, persists it, or shows an internal-error toast on failure.
@@ -261,6 +243,7 @@ async function submitReservation() {
 
     showSuccess.value = true
     isReservationSubmitting.value = false
+    reservationCode.value = result.data.reservationCode
 }
 </script>
 
@@ -276,146 +259,150 @@ async function submitReservation() {
       class="flex flex-col max-w-[1200px] mx-auto px-5 relative z-10 h-max"
       :class="step !== 1 ? 'h-full' : ''"
     >
-      <!-- Success screen -->
-      <Transition name="success" mode="out-in">
-        <div
-          v-if="showSuccess"
-          key="success"
-          class="h-full flex flex-col relative"
-        >
-          <!-- Spacer for logo -->
-          <div class="shrink-0 h-[100px]" aria-hidden />
+      <div
+        v-if="showSuccess"
+        key="success"
+        class="h-full flex flex-col relative"
+      >
+        <!-- Spacer for logo -->
+        <div class="shrink-0 h-[100px]" aria-hidden />
 
-          <!-- Success content - centered -->
-          <div class="flex-1 flex flex-col items-center justify-center px-5 py-8 pb-16">
-            <div class="w-full max-w-sm">
-              <!-- Success Card -->
-              <div class="rounded-2xl bg-white/90 dark:bg-dark-800/90 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-8 shadow-lg">
-                <div class="flex flex-col items-center text-center">
-                  <div class="success-checkmark">
-                    <div class="success-checkmark-circle size-24 flex items-center justify-center rounded-full bg-gradient-to-br from-primary to-green-600 shadow-[0_20px_40px_-12px_rgb(22_163_74/0.4)]">
-                      <UIcon name="i-lucide-check" class="size-14 text-white" />
-                    </div>
+        <!-- Success content - centered -->
+        <div class="flex-1 flex flex-col items-center justify-center px-5 py-8 pb-16">
+          <div class="w-full max-w-sm">
+            <!-- Success Card -->
+            <div class="rounded-2xl bg-white/90 dark:bg-dark-800/90 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-8 shadow-lg">
+              <div class="flex flex-col items-center text-center gap-5">
+                <div class="success-checkmark">
+                  <div class="success-checkmark-circle size-24 flex items-center justify-center rounded-full bg-gradient-to-br from-primary to-green-600 shadow-[0_20px_40px_-12px_rgb(22_163_74/0.4)]">
+                    <UIcon name="i-lucide-check" class="size-14 text-white" />
                   </div>
-                  <h1 class="success-title mt-6 text-2xl font-bold text-gray-900 dark:text-white">
-                    Gotowe! <br> Przejazd zarezerwowany
-                  </h1>
-                  <p class="success-desc mt-4 font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
-                    Teraz możesz odetchnąć,<br>my zajmiemy się resztą.
-                  </p>
-                  <p class="success-desc mt-4 text-right w-full tracking-tight text-gray-500 dark:text-gray-400">
-                    Do zobaczenia, zespół Tri<span class="text-primary">Go</span>
-                  </p>
                 </div>
+                <h1 class="success-title text-2xl font-bold text-gray-900 dark:text-white">
+                  Gotowe! <br> Przejazd zarezerwowany
+                </h1>
+                <p class="success-desc font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
+                  Teraz możesz odetchnąć,<br>my zajmiemy się resztą.
+                </p>
+                <div v-if="reservationCode" class="success-desc w-full bg-white p-4 rounded-2xl">
+                  <p class="text-xs font-medium text-gray-600 dark:text-gray-500 text-left">
+                    Twój numer rezerwacji:
+                  </p>
+                  <ReservationCodeBadge :code="reservationCode ?? ''" />
+                </div>
+                <p class="success-desc text-right w-full tracking-tight text-gray-500 dark:text-gray-400">
+                  Do zobaczenia, zespół Tri<span class="text-primary">Go</span>
+                </p>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Form flow -->
-        <div v-else key="form" class="h-max-content flex flex-col relative">
-          <!-- Current section - centered -->
-          <div 
-            class="flex-1 min-h-0 w-[calc(min(100%,700px))] relative mx-auto"
-            :class="step !== 1 ? 'overflow-y-auto' : ''"
+      <!-- Form flow -->
+      <div v-else key="form" class="h-max-content flex flex-col relative">
+        <!-- Current section - centered -->
+        <div 
+          class="flex-1 min-h-0 w-[calc(min(100%,700px))] relative mx-auto"
+          :class="step !== 1 ? 'overflow-y-auto' : ''"
+        >
+          <!-- Previous phase header - clickable -->
+          <UButton
+            v-if="previousPhaseInfo"
+            color="neutral"
+            variant="ghost"
+            class="absolute left-0 top-0 rounded-full bg-gray-100 dark:bg-dark-700 mt-8 pl-1.5 pr-1.5 [@media(min-height:700px)]:pr-4 py-1.5 opacity-80 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-dark-600 active:scale-[0.98] group"
+            @click="goToStep(previousPhaseInfo.step)"
           >
-            <!-- Previous phase header - clickable -->
-            <Transition name="fade">
-              <UButton
-                v-if="previousPhaseInfo"
-                color="neutral"
-                variant="ghost"
-                class="absolute left-0 top-0 rounded-full bg-gray-100 dark:bg-dark-700 mt-8 pl-1.5 pr-1.5 [@media(min-height:700px)]:pr-4 py-1.5 opacity-80 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-dark-600 active:scale-[0.98] group"
-                @click="goToStep(previousPhaseInfo.step)"
-              >
-                <template #leading>
-                  <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-dark-500 group-hover:bg-gray-400 dark:group-hover:bg-dark-400 transition-colors duration-200">
-                    <UIcon name="i-lucide-arrow-left" class="size-4 text-white" />
-                  </span>
-                </template>
-                <span class="hidden [@media(min-height:700px)]:inline text-sm font-semibold text-gray-500 dark:text-gray-400">
-                  {{ previousPhaseInfo.title }}
-                </span>
-              </UButton>
-            </Transition>
-            <!-- Phase 1: Place -->
-            <div v-if="step === 1" key="phase1" class="py-4">
-              <section class="text-center">
-                <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
-                  <LocationSearchInput
-                    v-model:from-model-value="pickupLocation"
-                    v-model:to-model-value="destination"
-                    from-label="Miejsce odbioru"
-                    to-label="Cel podróży"
-                    placeholder="Wpisz lub wybierz lokalizację..."
-                    to-placeholder="Dokąd jedziesz?"
-                    icon="i-lucide-map-pin"
-                    to-icon="i-lucide-navigation"
-                    @from-location-selected="handlePickupLocationSelected"
-                    @to-location-selected="handleDestinationSelected"
-                    @distance-updated="handleDistanceUpdated"
-                  />
-                </div>
-              </section>
-            </div>
-
-            <div v-else class="h-full mt-4 [@media(min-height:700px)]:mt-18">
-              <DateTimePickup
-                v-if="step === 2"
-                key="phase2"
-                v-model:ride-date="rideDate"
-                v-model:ride-time="rideTime"
-                v-model:pickup-type="pickupType"
-                custom-class="w-[calc(min(100%,700px))]"
-                @go-to-summary="goToStep(4)"
-              />
-
-              <ContactData
-                v-else-if="step === 3"
-                key="phase3"
-                v-model:first-name="firstName"
-                v-model:last-name="lastName"
-                v-model:phone-number="phoneNumber"
-                custom-class="w-[calc(min(100%,700px))]"
-                @go-to-summary="goToStep(4)"
-              />
-
-              <ReservationSummary
-                v-else
-                key="phase4"
-                :pickup-location="pickupLocation"
-                :destination="destination"
-                :ride-date="rideDate"
-                :ride-time="rideTime"
-                :pickup-type="pickupType"
-                :first-name="firstName"
-                :last-name="lastName"
-                :phone-number="phoneNumber"
-                custom-class="w-[calc(min(100%,700px))]"
-                @edit-route="goToStep(1)"
-                @edit-schedule="goToStep(2)"
-                @edit-contact="goToStep(3)"
-                @submit-reservation="submitReservation"
-              />
-
-              <div class="w-full mx-auto pb-5 mb-5 mt-3 flex items-center gap-5">
-                <SummaryButton v-if="allStepsValidAndLastVisited && step !== 4" @click="goToStep(4)" />
-
-                <ContinueButton v-if="step === 2" text="Dalej" @click="validateAndAdvance" />
-
-                <ContinueButton v-if="step === 3" text="Dalej" @click="validateAndAdvance" />
-
-                <ReservationButton
-                  v-if="step === 4"
-                  :loading="isReservationSubmitting"
-                  :disabled="isReservationSubmitting"
-                  @click="submitReservation"
+            <template #leading>
+              <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-dark-500 group-hover:bg-gray-400 dark:group-hover:bg-dark-400 transition-colors duration-200">
+                <UIcon name="i-lucide-arrow-left" class="size-4 text-white" />
+              </span>
+            </template>
+            <span class="hidden [@media(min-height:700px)]:inline text-sm font-semibold text-gray-500 dark:text-gray-400">
+              {{ previousPhaseInfo.title }}
+            </span>
+          </UButton>
+          <!-- Phase 1: Place -->
+          <div v-if="step === 1" key="phase1" class="py-4">
+            <section class="text-center">
+              <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
+                <LocationSearchInput
+                  v-model:from-model-value="pickupLocation"
+                  v-model:to-model-value="destination"
+                  from-label="Miejsce odbioru"
+                  to-label="Cel podróży"
+                  placeholder="Wpisz lub wybierz lokalizację..."
+                  to-placeholder="Dokąd jedziesz?"
+                  icon="i-lucide-map-pin"
+                  to-icon="i-lucide-navigation"
+                  @from-location-selected="handlePickupLocationSelected"
+                  @to-location-selected="handleDestinationSelected"
+                  @distance-updated="handleDistanceUpdated"
                 />
               </div>
+            </section>
+          </div>
+
+          <div v-else class="h-full mt-4 [@media(min-height:700px)]:mt-18">
+            <DateTimePickup
+              v-if="step === 2"
+              key="phase2"
+              v-model:ride-date="rideDateDraft"
+              v-model:ride-time="rideTimeDraft"
+              v-model:is-step-valid="isStep2Valid"
+              v-model:pickup-type="pickupType"
+              custom-class="w-[calc(min(100%,700px))]"
+              @go-to-summary="goToStep(4)"
+              @pickup-at-updated="handlePickupAtUpdated"
+            />
+              
+            <ContactData
+              v-if="step === 3"
+              key="phase3"
+              v-model:is-step-valid="isStep3Valid"
+              v-model:first-name="firstName"
+              v-model:last-name="lastName"
+              v-model:phone-number="phoneNumberDraft"
+              v-model:selected-country="selectedCountry"
+              v-model:final-phone-number="finalPhoneNumber"
+              custom-class="w-[calc(min(100%,700px))]"
+              @go-to-summary="goToStep(4)"
+            />
+
+            <ReservationSummary
+              v-if="step === 4"
+              key="phase4"
+              :pickup-location="pickupLocation"
+              :destination="destination"
+              :pickup-at="pickupAt"
+              :pickup-type="pickupType"
+              :first-name="firstName"
+              :last-name="lastName"
+              :phone-number="finalPhoneNumber"
+              custom-class="w-[calc(min(100%,700px))]"
+              @edit-route="goToStep(1)"
+              @edit-schedule="goToStep(2)"
+              @edit-contact="goToStep(3)"
+              @submit-reservation="submitReservation"
+            />
+
+            <div class="w-full mx-auto pb-5 mb-5 mt-3 flex items-center gap-5">
+              <SummaryButton v-if="allStepsValidAndLastVisited && step !== 4" @click="goToStep(4)" />
+
+              <ContinueButton v-if="step === 2" text="Dalej" @click="validateAndAdvance" />
+
+              <ContinueButton v-if="step === 3" text="Dalej" @click="validateAndAdvance" />
+
+              <ReservationButton
+                v-if="step === 4"
+                :loading="isReservationSubmitting"
+                @click="submitReservation"
+              />
             </div>
           </div>
         </div>
-      </Transition>
+      </div>
     </div>
     <div
       v-if="step === 1"
