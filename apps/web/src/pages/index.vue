@@ -307,7 +307,7 @@ async function submitReservation() {
                 <p class="success-desc font-medium text-gray-500 dark:text-gray-400 leading-relaxed">
                   Teraz możesz odetchnąć,<br>my zajmiemy się resztą.
                 </p>
-                <div v-if="reservationCode" class="success-desc w-full bg-white p-4 rounded-2xl">
+                <div v-if="reservationCode" class="success-desc w-full bg-white dark:bg-dark-900/50 p-4 rounded-2xl">
                   <p class="text-xs font-medium text-gray-600 dark:text-gray-500 text-left">
                     Twój numer rezerwacji:
                   </p>
