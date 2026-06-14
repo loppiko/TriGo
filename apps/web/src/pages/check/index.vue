@@ -13,7 +13,7 @@ const showReservationList = computed(() => useReservationStore().reservations.le
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl py-8">
+  <div class="mx-auto max-w-3xl py-8 px-4">
     <div v-if="!showReservationList">
       <GoBackButton v-if="showBackToReservationList" :text="'Rezerwacje'" @on-click="forceSearch = false" />
       <FindReservationByCode />

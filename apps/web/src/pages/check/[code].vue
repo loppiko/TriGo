@@ -18,7 +18,7 @@ const reservation = computed(() => useReservationStore().getReservationByCode(co
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl py-16">
+  <div class="mx-auto max-w-3xl py-12 px-4">
     <!-- Back nav -->
     <div class="mb-6 flex items-center justify-between gap-3">
       <GoBackButton :text="'Rezerwacje'" @on-click="navigateTo(ROUTES.CHECK)" />

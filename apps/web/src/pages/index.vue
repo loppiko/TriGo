@@ -54,7 +54,7 @@ const showSuccess = ref(false)
 const isReservationSubmitting = ref(false)
 
 const reservationCode = ref<string | undefined>()
-
+const isInputHidden = ref(false)
 
 /**
  * Builds a reservation from current wizard state and validates it against reservationSchema.
@@ -260,9 +260,27 @@ async function submitReservation() {
     >
       <Map ref="mapRef" />
     </div>
+    <UButton
+      v-if="step === 1 && isInputHidden"
+      color="neutral"
+      variant="ghost"
+      class="absolute top-5 right-5 z-10 rounded-full bg-gray-100 dark:bg-dark-700 pl-1.5 pr-4 py-1.5 opacity-100 hover:opacity-90 hover:bg-gray-200 dark:hover:bg-dark-600 active:scale-[0.98] group"
+      @click="isInputHidden = !isInputHidden"
+    >
+      <template #leading>
+        <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-dark-500 group-hover:bg-gray-400 dark:group-hover:bg-dark-400 transition-colors duration-200">
+          <UIcon name="i-lucide-eye" class="size-4 text-white transition-transform duration-200 ease-out group-hover:-translate-y-0.5" />
+        </span>
+      </template>
+      <span
+        class="text-sm font-semibold text-gray-500 dark:text-gray-400"
+      >
+        Pokaż trasę
+      </span>
+    </UButton>
     <div 
       class="flex flex-col max-w-[1200px] mx-auto px-5 relative z-10 h-max"
-      :class="step !== 1 ? 'h-full' : ''"
+      :class="step !== 1 ? 'h-full' : isInputHidden ? 'pointer-events-none opacity-0' : ''"
     >
       <div
         v-if="showSuccess"
@@ -341,9 +359,11 @@ async function submitReservation() {
                   to-placeholder="Dokąd jedziesz?"
                   icon="i-lucide-map-pin"
                   to-icon="i-lucide-navigation"
+                  :is-input-hidden="isInputHidden"
                   @from-location-selected="handlePickupLocationSelected"
                   @to-location-selected="handleDestinationSelected"
                   @distance-updated="handleDistanceUpdated"
+                  @toggle-input-visibility="isInputHidden = !isInputHidden"
                 />
               </div>
             </section>

@@ -24,7 +24,7 @@ function handleMouseLeave(): void {
 </script>
 
 <template>
-  <div class="mx-auto py-8">
+  <div class="mx-auto py-8 ">
     <!-- Empty state -->
     <div
       v-if="reservations.length === 0"
@@ -44,12 +44,12 @@ function handleMouseLeave(): void {
     <!-- List -->
     <div
       v-else
-      class="space-y-3 grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6"
+      class="space-y-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"
     >
       <article
         v-for="reservation in reservations"
         :key="reservation.id"
-        class="group cursor-pointer mb-0 overflow-hidden rounded-2xl bg-transparent dark:bg-dark-900/30 shadow-sm ring-1 ring-gray-200/70 dark:ring-dark-700/60 transition-all duration-200 hover:shadow-md hover:ring-primary/40"
+        class="group cursor-pointer mb-0 max-w-[400px] w-full justify-self-center overflow-hidden rounded-2xl bg-transparent dark:bg-dark-900/30 shadow-sm ring-1 ring-gray-200/70 dark:ring-dark-700/60 transition-all duration-200 hover:shadow-md hover:ring-primary/40"
         @mouseenter="handleMouseEnter(reservation.code)"
         @mouseleave="handleMouseLeave"
         @click="navigateTo(`${ROUTES.CHECK}/${reservation.code}`)"

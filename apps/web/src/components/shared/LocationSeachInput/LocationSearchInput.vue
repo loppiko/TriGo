@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { nextTick, type Ref } from 'vue'
 import { useLocationSearch } from '~/composables/geolocation/useLocationSearch'
-import type { TomLocation } from '#shared/types/location/search/schema'
-import type { PlaceCoordinates } from '#shared/types/location/schema'
+import type { TomLocation } from '#shared/types/models/location/search/schema'
+import type { PlaceCoordinates } from '#shared/types/models/location/schema'
 import { formatRouteDistanceMeters } from '#shared/ui/distance/distance'
+import { useWindowSize } from '@vueuse/core'
 
 
 const props = withDefaults(defineProps<{
@@ -15,6 +16,7 @@ const props = withDefaults(defineProps<{
     toPlaceholder?: string
     icon?: string
     toIcon?: string
+    isInputHidden?: boolean
 }>(), {
     fromModelValue: undefined,
     toModelValue: undefined,
@@ -24,6 +26,7 @@ const props = withDefaults(defineProps<{
     toPlaceholder: 'Dokąd jedziesz?',
     icon: 'i-lucide-map-pin',
     toIcon: 'i-lucide-navigation',
+    isInputHidden: false,
 })
 
 
@@ -31,8 +34,8 @@ const emit = defineEmits<{
     (event: 'update:fromModelValue' | 'update:toModelValue', value: TomLocation | undefined): void
     (event: 'from-location-selected' | 'to-location-selected', value: TomLocation): void
     (event: 'distance-updated', value: number): void
+    (event: 'toggle-input-visibility'): void
 }>()
-
 
 const fromQuery = ref(props.fromModelValue?.poi?.name ?? props.fromModelValue?.address?.freeformAddress ?? '')
 const toQuery = ref(props.toModelValue?.poi?.name ?? props.toModelValue?.address?.freeformAddress ?? '')
@@ -53,6 +56,8 @@ const fromLocationSearch = useLocationSearch(fromSearchState, toChoosenLocation)
 const toLocationSearch = useLocationSearch(toSearchState, fromChoosenLocation)
 
 const toInputActive = computed(() => fromChoosenLocation.value !== null)
+
+const isMobileLayout = computed(() => useWindowSize().width.value < 750)
 
 
 watch(
@@ -231,8 +236,27 @@ async function beginEditTo() {
 </script>
 
 <template>
-  <div class="flex items-start gap-2">
-    <div class="flex-1 w-[calc(min(100%,600px))]">
+  <div 
+    class="flex items-start gap-2 relative"
+    :class="isMobileLayout ? 'flex-col' : 'flex-row'"
+  >
+    <UButton
+      v-if="isMobileLayout && !isInputHidden"
+      :icon="isInputHidden ? 'i-lucide-eye' : 'i-lucide-eye-off'"
+      size="xs"
+      color="neutral"
+      variant="ghost"
+      class="pointer-events-auto opacity-150"
+      :ui="{
+        base: 'absolute right-0 top-[-10px] z-10'
+      }"
+      @click="emit('toggle-input-visibility')"
+    />
+
+    <div 
+      class="flex-1"
+      :class="isMobileLayout ? 'w-full' : 'w-[calc(min(100%,600px))'"
+    >
       <label
         v-if="fromLabel"
         class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400"
@@ -363,18 +387,18 @@ async function beginEditTo() {
         </div>
       </div>
     </div>
-
-    <div v-if="fromChoosenLocation" class="flex flex-col items-center self-stretch pt-5 gap-1">
-      <div class="flex-1 w-px bg-gray-200 dark:bg-dark-600" />
+ 
+    <div v-if="fromChoosenLocation" class="flex items-center self-stretch gap-1" :class="isMobileLayout ? 'flex-row pt-2' : 'flex-col pt-5'">
+      <div class="flex-1 bg-gray-200 dark:bg-dark-600" :class="isMobileLayout ? 'h-px' : 'w-px'" />
       <UIcon
-        name="i-lucide-arrow-right"
+        :name="isMobileLayout ? 'i-lucide-arrow-down' : 'i-lucide-arrow-right'"
         class="size-3.5 shrink-0 transition-colors duration-200"
         :class="fromChoosenLocation ? 'text-primary' : 'text-gray-300 dark:text-gray-600'"
       />
-      <div class="flex-1 w-px bg-gray-200 dark:bg-dark-600" />
+      <div class="flex-1 bg-gray-200 dark:bg-dark-600" :class="isMobileLayout ? 'h-px' : 'w-px'" />
     </div>
 
-    <div v-show="toInputActive" class="flex-1 min-w-0">
+    <div v-show="toInputActive" class="flex-1" :class="isMobileLayout ? 'w-full' : 'min-w-0'">
       <label
         v-if="toLabel"
         class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400"
