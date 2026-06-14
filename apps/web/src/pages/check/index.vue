@@ -8,13 +8,14 @@ definePageMeta({ layout: 'reservation' })
 
 const forceSearch = ref(false)
 
+const showBackToReservationList = computed(() => useReservationStore().reservations.length > 0)
 const showReservationList = computed(() => useReservationStore().reservations.length > 0 && !forceSearch.value)
 </script>
 
 <template>
   <div class="mx-auto max-w-3xl py-8">
     <div v-if="!showReservationList">
-      <GoBackButton :text="'Rezerwacje'" @on-click="forceSearch = false" />
+      <GoBackButton v-if="showBackToReservationList" :text="'Rezerwacje'" @on-click="forceSearch = false" />
       <FindReservationByCode />
     </div>
 
