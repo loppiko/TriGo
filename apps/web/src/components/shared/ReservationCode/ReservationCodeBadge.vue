@@ -2,9 +2,15 @@
 import { successfulNotification } from '~/utils/notifications/toast';
 
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     code: string
-}>()
+    size?: 'md' | 'lg'
+}>(), {
+    size: 'md',
+})
+
+const codeTextClass = computed(() => props.size === 'lg' ? 'text-xl' : 'text-sm')
+const iconClass = computed(() => props.size === 'lg' ? 'size-5' : 'size-3.5')
 
 async function copyReservationCode() {
     if (!props.code) return
@@ -17,14 +23,14 @@ async function copyReservationCode() {
   <UButton
     color="neutral"
     variant="link"
-    size="md"
+    :size="size"
     class="font-mono tracking-widest w-full group"
     :ui="{
       base: 'flex justify-between',
     }"
     @click="copyReservationCode"
   >
-    <div>
+    <div :class="codeTextClass">
       <span class="font-mono tracking-widest text-primary group-hover:text-primary/80">
         {{ code.slice(0, 3) }}
       </span>
@@ -36,7 +42,8 @@ async function copyReservationCode() {
     <template #trailing>
       <UIcon
         name="i-lucide-copy"
-        class="size-3.5 transition-transform duration-200 group-hover:-translate-y-0.5"
+        :class="iconClass"
+        class="transition-transform duration-200 group-hover:-translate-y-0.5"
       />
     </template>
   </UButton>

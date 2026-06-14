@@ -34,7 +34,7 @@ export const reservationsRoutes = new Hono<{ Bindings: RawEnv, Variables: HonoVa
             }
         }
     )
-    .get('/by-code',
+    .post('/by-code',
         zValidator('json', reservationGetByCodeBodySchema),
         async (c) => {
             const result = await useReservationsHandler()

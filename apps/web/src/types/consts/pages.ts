@@ -1,9 +1,7 @@
 export const ROUTES = {
     HOME: '/',
-    SUBJECTS: '/subjects',
-    CLASSES: '/classes',
-    TEACHERS: '/teachers',
-    LOGIN: '/login',
+    ABOUT: '/about',
+    CHECK: '/check',
 } as const
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES]

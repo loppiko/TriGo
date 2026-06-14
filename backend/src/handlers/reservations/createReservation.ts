@@ -51,7 +51,7 @@ export async function createReservation(userCredentials: User | null, body: Rese
     return {
         success: true,
         data: {
-            reservationCode: result.data.reservationCode,
+            reservation: result.data.reservation,
         },
     }
 }

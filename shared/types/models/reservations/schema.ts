@@ -4,7 +4,7 @@ import { PickupTypeEnum, ReservationStatus } from './enums'
 import { RESERVATION_CODE_ALPHABET_SET } from '../../../consts/reservations'
 
 
-export const dateTimeSchema = z.iso.datetime();
+export const dateTimeSchema = z.iso.datetime().brand<'DateTime'>();
 
 
 /**
@@ -77,12 +77,12 @@ export const reservationSchema = z.object({
     pickupAt: dateTimeSchema,
     pickupType: z.enum(PickupTypeEnum),
 
-    deleted: z.boolean().optional(),
+    deleted: z.boolean().optional().nullable(),
     status: z.enum(ReservationStatus),
-    assignedDriver: assignedDriverSchema.optional(),
+    assignedDriver: assignedDriverSchema.optional().nullable(),
 
-    deviceId: z.string().optional(),
-    createdBy: z.string().optional(),
+    deviceId: z.string().optional().nullable(),
+    createdBy: z.string().optional().nullable(),
     createdAt: dateTimeSchema.optional(),
     updatedAt: dateTimeSchema.optional(),
 })

@@ -2,6 +2,7 @@ import type { Result, ResultWithErrorType } from '#shared/types/core'
 import type { Reservation } from '#shared/types/models/reservations/schema'
 import { useSessionStorage } from '~/composables/auth/useSession'
 import { getHonoClient } from '~/composables/backend/hono'
+import { useReservationStore } from '~/composables/store/reservationStore'
 
 
 export function useReservations() {
@@ -12,7 +13,7 @@ export function useReservations() {
 }
 
 
-async function createReservation(reservation: Omit<Reservation, 'id' | 'code' | 'deleted' | 'status' | 'updatedAt' | 'createdAt'>): Promise<Result<{ reservationCode: string }>> {
+async function createReservation(reservation: Omit<Reservation, 'id' | 'code' | 'deleted' | 'status' | 'updatedAt' | 'createdAt'>): Promise<Result<{reservation: Reservation}>> {
     try {
         const deviceId = useSessionStorage().deviceId.value
 
@@ -24,7 +25,8 @@ async function createReservation(reservation: Omit<Reservation, 'id' | 'code' | 
             console.error('[createReservation] Backend error:', rawData.error.type, rawData.error.message)
             return { success: false, error: `Request failed: ${rawData.error.message}` }
         } else {
-            return { success: true, data: rawData.data }
+            useReservationStore().addReservation(rawData.data.reservation)
+            return { success: true, data: { reservation: rawData.data.reservation } }
         }
 
     } catch (error) {
@@ -46,7 +48,7 @@ async function getReservationByCodeAndPhoneNumber(code: string, phoneNumber: str
 
     try {
         const deviceId = useSessionStorage().deviceId.value
-        const response = await getHonoClient().reservations['by-code'].$get({ json: { code, phoneNumber, deviceId } })
+        const response = await getHonoClient().reservations['by-code'].$post({ json: { code, phoneNumber, deviceId } })
 
         const rawData = await response.json()
             

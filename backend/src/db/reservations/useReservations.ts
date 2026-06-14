@@ -1,5 +1,5 @@
 import type { Result, ResultWithErrorType } from '#shared/types/core'
-import type { Reservation } from '#shared/types/models/reservations/schema'
+import { dateTimeSchema, type Reservation } from '#shared/types/models/reservations/schema'
 import { getSupabaseClient } from '../supabase'
 import type { User } from '@supabase/supabase-js'
 import { RESERVATION_CODE_ALPHABET } from '#shared/consts/reservations'
@@ -36,7 +36,7 @@ function toSupabaseReservation(reservation: Reservation, userCredentials: User |
 }
 
 
-async function createReservation(reservation: Omit<Reservation, 'code' | 'status'>, userCredentials: User | null): Promise<Result<{ reservationCode: string}>> {
+async function createReservation(reservation: Omit<Reservation, 'code' | 'status'>, userCredentials: User | null): Promise<Result<{reservation: Reservation}>> {
     const reservationCode = createReservationCode()
     const supabaseReservation = toSupabaseReservation({ ...reservation, code: reservationCode, status: ReservationStatus.WAITING_FOR_ASSIGNMENT }, userCredentials)
     
@@ -50,7 +50,19 @@ async function createReservation(reservation: Omit<Reservation, 'code' | 'status
         return { success: false, error: error.message }
     }
 
-    return { success: true, data: { reservationCode: supabaseReservation.code } }
+    const createdAtResult = dateTimeSchema.safeParse(supabaseReservation.createdAt)
+    const updatedAtResult = dateTimeSchema.safeParse(supabaseReservation.updatedAt)
+
+    return { success: true, 
+        data: { 
+            reservation: {
+                ...supabaseReservation, 
+                createdAt: createdAtResult.success ? createdAtResult.data : undefined,
+                updatedAt: updatedAtResult.success ? updatedAtResult.data : undefined,
+                assignedDriver: null,
+            },
+        },
+    }
 }
 
 
@@ -67,14 +79,17 @@ async function getReservationByCodeAndPhoneNumber(code: string, phoneNumber: str
         })
 
     if (error?.message === 'INVALID_CODE') {
+        console.warn('[getReservationByCodeAndPhoneNumber] Invalid code reservation code: ', code, ' phone number: ', phoneNumber)
         return { success: false, errorType: 'INVALID_CODE', errorMessage: error.message }
     }
 
     if (error?.message === 'INVALID_PHONE_NUMBER') {
+        console.warn('[getReservationByCodeAndPhoneNumber] Invalid phone number for code: ', code, ' phone number: ', phoneNumber)
         return { success: false, errorType: 'INVALID_PHONE_NUMBER', errorMessage: error.message }
     }
 
     if (error) {
+        console.error('[getReservationByCodeAndPhoneNumber] Unknown error', code, phoneNumber, error)
         return { success: false, errorType: 'UNKNOWN_ERROR', errorMessage: error.message }
     }
 

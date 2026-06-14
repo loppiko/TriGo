@@ -10,7 +10,7 @@ type ReservationsCreationServiceErrors =
 
 
 export type ReservationCreationServiceResult = ServiceResult<
-  { reservationCode: string },
+  { reservation: Reservation },
   ReservationsCreationServiceErrors
 >;
 

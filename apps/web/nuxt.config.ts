@@ -35,6 +35,20 @@ export default defineNuxtConfig({
         },
     },
 
+    vite: {
+        optimizeDeps: {
+            include: [
+                'pinia',
+                'zod',
+                'mapbox-gl',
+                'zod/v4',
+                '@vueuse/core',
+                'hono/client',
+                'pinia-plugin-persistedstate'
+            ],
+        },
+    },
+
     devtools: { enabled: true },
     modules: ['@nuxt/eslint', '@nuxt/image', '@nuxt/ui'],
     css: ['./main.css'],

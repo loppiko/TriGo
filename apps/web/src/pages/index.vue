@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import type { Result } from '#shared/types/core'
 import { TomLocationSchema, type TomLocation } from '#shared/types/models/location/search/schema'
-import { reservationSchema, type Reservation } from '#shared/types/models/reservations/schema'
+import { dateTimeSchema, reservationSchema, type DateTime, type Reservation } from '#shared/types/models/reservations/schema'
 import { errorNotification, infoNotification } from '~/utils/notifications/toast'
 import LocationSearchInput from '~/components/shared/LocationSeachInput/LocationSearchInput.vue'
 import { ReservationStatus } from '#shared/types/models/reservations/enums'
@@ -40,7 +40,7 @@ const distance = ref<number>(0)
 const rideDateDraft = ref('')
 const rideTimeDraft = ref('')
 const pickupType = ref<PickupTypeEnum | null>(null)
-const pickupAt = ref('')
+const pickupAt = ref<DateTime | undefined>()
 
 // Step 3
 const firstName = ref('')
@@ -214,7 +214,12 @@ function handleDistanceUpdated(dist: number): void {
 
 
 function handlePickupAtUpdated(newPickupAt: string): void {
-    pickupAt.value = newPickupAt
+    const parsedPickupAt = dateTimeSchema.safeParse(newPickupAt)
+    if (!parsedPickupAt.success) {
+        console.error('[handlePickupAtUpdated] Invalid pickupAt')
+        return
+    }
+    pickupAt.value = parsedPickupAt.data
 }
 
 /**
@@ -243,7 +248,7 @@ async function submitReservation() {
 
     showSuccess.value = true
     isReservationSubmitting.value = false
-    reservationCode.value = result.data.reservationCode
+    reservationCode.value = result.data.reservation.code
 }
 </script>
 
@@ -371,7 +376,7 @@ async function submitReservation() {
             />
 
             <ReservationSummary
-              v-if="step === 4"
+              v-if="step === 4 && pickupAt"
               key="phase4"
               :pickup-location="pickupLocation"
               :destination="destination"

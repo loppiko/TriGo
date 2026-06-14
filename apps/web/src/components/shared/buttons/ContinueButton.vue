@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{
     text: string
+    loading?: boolean
 }>()
 
 defineEmits<{
@@ -16,7 +17,12 @@ defineEmits<{
   >
     <span class="flex-1 text-center">{{ text }}</span>
     <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary group-hover:bg-primary/90 transition-colors duration-200">
-      <UIcon name="i-lucide-arrow-right" class="size-4 text-white group-hover:translate-x-0.5 transition-transform duration-200" />
+      <UIcon 
+        v-if="!loading"
+        name="i-lucide-arrow-right" class="size-4 text-white group-hover:translate-x-0.5 transition-transform duration-200" />
+      <UIcon 
+        v-else
+        name="i-lucide-loader-circle" class="size-4 text-white animate-spin" />
     </span>
   </button>
 </template>

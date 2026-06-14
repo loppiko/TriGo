@@ -1,24 +1,36 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { ROUTES } from '~/types/consts/pages';
 
 
-const navigationItems: NavigationMenuItem[] = [
+const colorMode = useColorMode()
+
+function toggleColorMode() {
+    colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+}
+
+const route = useRoute()
+
+const isCheckRoute = computed(() => route.path.startsWith(`${ROUTES.CHECK}`))
+
+const navigationItems = computed<NavigationMenuItem[]>(() => [
     {
         label: 'Informacje o nas',
         icon: 'i-lucide-info',
-        to: '/about',
+        to: ROUTES.ABOUT,
     },
     {
         label: 'Rezerwacja przejazdu',
         icon: 'i-lucide-car',
-        to: '/',
+        to: ROUTES.HOME,
     },
     {
         label: 'Sprawdź rezerwację',
         icon: 'i-lucide-search',
-        to: '/check',
+        to: ROUTES.CHECK,
+        active: isCheckRoute.value,
     },
-]
+])
 </script>
 
 <template>
@@ -31,6 +43,19 @@ const navigationItems: NavigationMenuItem[] = [
             Tri<span class="text-primary">Go</span>
           </span>
         </NuxtLink>
+
+        <div class="hidden min-[850px]:block absolute mr-4 right-0 top-1/2 -translate-y-1/2 z-10">
+          <UButton
+            size="sm"
+            :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
+            color="neutral"
+            variant="ghost"
+            :ui="{
+              leadingIcon: 'transition-transform duration-300 hover:rotate-12'
+            }"
+            @click="toggleColorMode"
+          />
+        </div>
 
         <UNavigationMenu
           :items="navigationItems"
