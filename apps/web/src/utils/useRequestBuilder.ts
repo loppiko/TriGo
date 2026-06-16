@@ -1,7 +1,14 @@
 import type { FetchResult } from "#shared/types/core"
 
 
-export async function getRequest(url: string, queryParams?: Record<string, string>, abortController?: AbortController): Promise<FetchResult<Response>> {
+export function useRequestBuilder() {
+    return {
+        getRequest,
+    }
+}
+
+
+async function getRequest(url: string, queryParams?: Record<string, string>, abortController?: AbortController): Promise<FetchResult<Response>> {
     if (!isValidUrl(url)) {
         return {
             success: false,

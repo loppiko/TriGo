@@ -1,5 +1,4 @@
 import { computed, reactive, type Ref } from 'vue'
-import { getRequest } from '~/utils/useRequestBuilder'
 import { ENUM_JSDOC_FILTERED_FUZZY_TYPES } from '#shared/types/models/location/search/enum'
 import { fuzzyResultToProcessed } from '#shared/types/models/location/search/fuzzyResults'
 import {
@@ -129,7 +128,7 @@ async function fetchFuzzyResults(
     const tomtomConfig = runtimeConfig.public.tomtom
 
     try {
-        const requestResult = await getRequest(
+        const requestResult = await useRequestBuilder().getRequest(
             `${tomtomConfig.fuzzySearchUrl}/${encodeURIComponent(query)}.json`,
             {
                 key: tomtomConfig.apiKey,

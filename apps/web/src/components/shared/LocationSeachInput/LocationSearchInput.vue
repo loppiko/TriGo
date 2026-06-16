@@ -10,6 +10,7 @@ import { useWindowSize } from '@vueuse/core'
 const props = withDefaults(defineProps<{
     fromModelValue?: TomLocation
     toModelValue?: TomLocation
+    distance?: number
     fromLabel?: string
     toLabel?: string
     placeholder?: string
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<{
 }>(), {
     fromModelValue: undefined,
     toModelValue: undefined,
+    distance: undefined,
     fromLabel: '',
     toLabel: '',
     placeholder: 'Type location',
@@ -33,7 +35,6 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     (event: 'update:fromModelValue' | 'update:toModelValue', value: TomLocation | undefined): void
     (event: 'from-location-selected' | 'to-location-selected', value: TomLocation): void
-    (event: 'distance-updated', value: number): void
     (event: 'toggle-input-visibility'): void
 }>()
 
@@ -155,10 +156,6 @@ function handleFromSelectResult(item: TomLocation) {
         lon: item.position.lon,
     }
 
-    if (toChoosenLocation.value && !isNaN(Number(item.dist))) {
-        emit('distance-updated', Number(item.dist))
-    }
-
     emit('update:fromModelValue', item)
     emit('from-location-selected', item)
 }
@@ -170,10 +167,6 @@ function handleToSelectResult(item: TomLocation) {
     toChoosenLocation.value = {
         lat: item.position.lat,
         lon: item.position.lon,
-    }
-
-    if (fromChoosenLocation.value && !isNaN(Number(item.dist))) {
-        emit('distance-updated', Number(item.dist))
     }
 
     emit('update:toModelValue', item)
@@ -388,7 +381,14 @@ async function beginEditTo() {
       </div>
     </div>
  
-    <div v-if="fromChoosenLocation" class="flex items-center self-stretch gap-1" :class="isMobileLayout ? 'flex-row pt-2' : 'flex-col pt-5'">
+    <div v-if="fromChoosenLocation" class="flex items-center self-stretch gap-1" :class="isMobileLayout ? 'flex-row pt-4 relative' : 'flex-col pt-5'">
+      <span
+        v-if="distance && distance >= 0"
+        class="absolute top-[-3px] text-[11px] mx-auto text-gray-400 dark:text-gray-500"
+        :class="isMobileLayout ? 'w-full' : 'w-max'"
+      >
+        {{formatRouteDistanceMeters(distance) }}
+      </span>
       <div class="flex-1 bg-gray-200 dark:bg-dark-600" :class="isMobileLayout ? 'h-px' : 'w-px'" />
       <UIcon
         :name="isMobileLayout ? 'i-lucide-arrow-down' : 'i-lucide-arrow-right'"
@@ -436,12 +436,6 @@ async function beginEditTo() {
                 class="text-xs text-gray-500 dark:text-gray-400"
               >
                 {{ toModelValue.address.municipality }}
-              </span>
-              <span
-                v-if="toModelValue.dist != null && toModelValue.dist >= 0"
-                class="text-[11px] text-gray-400 dark:text-gray-500"
-              >
-                {{ formatRouteDistanceMeters(toModelValue.dist) }}
               </span>
             </div>
           </div>
@@ -525,12 +519,6 @@ async function beginEditTo() {
                       class="text-xs text-gray-500 dark:text-gray-400"
                     >
                       {{ item.address.municipality }}
-                    </span>
-                    <span
-                      v-if="item.dist != null && item.dist >= 0"
-                      class="text-[11px] text-gray-400 dark:text-gray-500"
-                    >
-                      {{ formatRouteDistanceMeters(item.dist) }}
                     </span>
                   </div>
                 </div>

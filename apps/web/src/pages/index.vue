@@ -34,7 +34,7 @@ const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
 // Step 1
 const pickupLocation = ref<TomLocation | undefined>()
 const destination = ref<TomLocation | undefined>()
-const distance = ref<number>(0)
+const distance = ref<number | undefined>()
 
 // Step 2
 const rideDateDraft = ref('')
@@ -64,7 +64,7 @@ function buildReservationFromWizardState(): Result<Reservation> {
     const dest = destination.value
     const type = pickupType.value
 
-    if (!pickup || !dest || type == null || !dest.dist) {
+    if (!pickup || !dest || type == null || !distance.value) {
         console.error('[buildReservationFromWizardState] Missing required wizard fields')
         return { success: false, error: 'Missing required wizard fields' }
     }
@@ -79,7 +79,7 @@ function buildReservationFromWizardState(): Result<Reservation> {
     const candidate: Reservation = {
         pickup: TomLocationToPlace(pickup),
         destination: TomLocationToPlace(dest),
-        distance: dest.dist,
+        distance: distance.value,
         pickupAt: pickupAt.value,
         pickupType: type,
         clientData: {
@@ -100,14 +100,44 @@ function buildReservationFromWizardState(): Result<Reservation> {
 }
 
 
-watch(pickupLocation, (newVal) => {
+watch(pickupLocation, async (newVal) => {
     if (!newVal) return
+    if (!mapRef.value) {
+        console.error('[pickupLocation] Map not initialized')
+        errorNotification('Wystąpił problem podczas ładowania mapy')
+        return
+    }
+
+    if (pickupLocation.value && destination.value) {
+        const result = await mapRef.value.getRoute(pickupLocation.value.position, destination.value.position)
+        if (!result.success) {
+            console.error('[pickupLocation] Failed to get route:', result.error)
+            errorNotification('Wystąpił problem podczas tworzenia trasy')
+            return
+        }
+        mapRef.value?.getRoute(pickupLocation.value.position, destination.value.position)
+    }
     mapRef.value?.flyTo(newVal.position.lat, newVal.position.lon, 'pickup')
 })
 
 
-watch(destination, (newVal) => {
+watch(destination, async (newVal) => {
     if (!newVal) return
+    if (!mapRef.value) {
+        console.error('[destination] Map not initialized')
+        errorNotification('Wystąpił problem podczas ładowania mapy')
+        return
+    }
+
+    if (pickupLocation.value && destination.value) {
+        const result = await mapRef.value.getRoute(pickupLocation.value.position, destination.value.position)
+        if (!result.success) {
+            console.error('[destination] Failed to get route:', result.error)
+            errorNotification('Wystąpił problem podczas tworzenia trasy')
+            return
+        }
+        distance.value = result.data.distance
+    }
     mapRef.value?.flyTo(newVal.position.lat, newVal.position.lon, 'destination')
 })
 
@@ -202,14 +232,6 @@ function handlePickupLocationSelected(location: TomLocation) {
 
 function handleDestinationSelected(location: TomLocation) {
     destination.value = location
-}
-
-
-function handleDistanceUpdated(dist: number): void {
-    distance.value = dist
-    if (destination.value) {
-        destination.value.dist = dist
-    }
 }
 
 
@@ -347,12 +369,13 @@ async function submitReservation() {
             </span>
           </UButton>
           <!-- Phase 1: Place -->
-          <div v-if="step === 1" key="phase1" class="py-4">
+          <div v-if="step === 1" key="phase1" class="pt-4">
             <section class="text-center">
               <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
                 <LocationSearchInput
                   v-model:from-model-value="pickupLocation"
                   v-model:to-model-value="destination"
+                  :distance="distance"
                   from-label="Miejsce odbioru"
                   to-label="Cel podróży"
                   placeholder="Wpisz lub wybierz lokalizację..."
@@ -362,7 +385,6 @@ async function submitReservation() {
                   :is-input-hidden="isInputHidden"
                   @from-location-selected="handlePickupLocationSelected"
                   @to-location-selected="handleDestinationSelected"
-                  @distance-updated="handleDistanceUpdated"
                   @toggle-input-visibility="isInputHidden = !isInputHidden"
                 />
               </div>

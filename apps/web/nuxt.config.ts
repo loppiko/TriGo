@@ -31,6 +31,7 @@ export default defineNuxtConfig({
                 defaultCenterLat: process.env.NUXT_PUBLIC_MAPBOX_DEFAULT_CENTER_LAT,
                 defaultZoom: process.env.NUXT_PUBLIC_MAPBOX_DEFAULT_ZOOM,
                 defaultZoom3dThreshold: process.env.NUXT_PUBLIC_MAPBOX_DEFAULT_ZOOM_3D_TRESHOLD,
+                routeUrl: process.env.NUXT_PUBLIC_MAPBOX_ROUTE_URL,
             },
         },
     },

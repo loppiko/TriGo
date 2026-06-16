@@ -1,15 +1,6 @@
-<template>
-  <div class="relative w-full h-full">
-    <div ref="mapContainer" class="w-full h-full" />
-    <Transition name="map-fade">
-      <div v-if="!isLoaded" class="absolute inset-0">
-        <USkeleton class="w-full h-full rounded-none" />
-      </div>
-    </Transition>
-  </div>
-</template>
-
 <script setup lang="ts">
+import type { PlaceCoordinates } from '#shared/types/models/location/schema'
+import type { Result } from '#shared/types/core'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
@@ -35,24 +26,6 @@ const MARKER_COLORS: Record<MarkerType, string> = {
 let map: mapboxgl.Map | null = null
 let is3DActive = false
 const activeMarkers = new Map<MarkerType, mapboxgl.Marker>()
-
-
-/** Transitions the map camera into 3D building view or back to flat based on current zoom. */
-function updateCameraMode(): void {
-    if (!map) return
-
-    const zoom = map.getZoom()
-    const shouldBe3D = zoom > ZOOM_3D_THRESHOLD
-
-    if (shouldBe3D && !is3DActive) {
-        is3DActive = true
-        map.easeTo({ pitch: PITCH_3D, duration: TRANSITION_DURATION_MS })
-    }
-    else if (!shouldBe3D && is3DActive) {
-        is3DActive = false
-        map.easeTo({ pitch: PITCH_FLAT, duration: TRANSITION_DURATION_MS })
-    }
-}
 
 
 onMounted(() => {
@@ -98,8 +71,132 @@ function flyTo(lat: number, lng: number, markerType: MarkerType): void {
     activeMarkers.set(markerType, marker)
 }
 
-defineExpose({ flyTo })
+
+/** Transitions the map camera into 3D building view or back to flat based on current zoom. */
+function updateCameraMode(): void {
+    if (!map) return
+
+    const zoom = map.getZoom()
+    const shouldBe3D = zoom > ZOOM_3D_THRESHOLD
+
+    if (shouldBe3D && !is3DActive) {
+        is3DActive = true
+        map.easeTo({ pitch: PITCH_3D, duration: TRANSITION_DURATION_MS })
+    }
+    else if (!shouldBe3D && is3DActive) {
+        is3DActive = false
+        map.easeTo({ pitch: PITCH_FLAT, duration: TRANSITION_DURATION_MS })
+    }
+}
+
+
+function drawRoute(geojson: GeoJSON.Feature<GeoJSON.Geometry>): void {
+    if (!map) return
+
+    if (map.getLayer('route')) map.removeLayer('route')
+    if (map.getLayer('route-casing')) map.removeLayer('route-casing')
+    if (map.getSource('route')) map.removeSource('route')
+
+    map.addSource('route', {
+        type: 'geojson',
+        data: geojson,
+    })
+
+    // Wider underlay for contrast on dark 3D styles
+    map.addLayer({
+        id: 'route-casing',
+        type: 'line',
+        source: 'route',
+        layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+        },
+        paint: {
+            'line-color': '#1a3d6b',
+            'line-width': 8,
+            'line-opacity': 0.6,
+            'line-emissive-strength': 1,
+        },
+    })
+
+    map.addLayer({
+        id: 'route',
+        type: 'line',
+        source: 'route',
+        layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+        },
+        paint: {
+            'line-color': '#326ba8',
+            'line-width': 5,
+            'line-opacity': 1,
+            'line-emissive-strength': 1,
+        },
+    })
+}
+
+
+async function getRoute(from: PlaceCoordinates, to: PlaceCoordinates): Promise<Result<{distance: number}>> {
+    function buildRouteUrl(from: PlaceCoordinates, to: PlaceCoordinates): string {
+        // Mapbox Directions API expects {longitude},{latitude}
+        return `${config.public.mapbox.routeUrl}/${from.lon},${from.lat};${to.lon},${to.lat}`
+    }
+
+    if (!map) {
+        console.error('[getRoute] Map not initialized')
+        return { success: false, error: 'Map not initialized' }
+    }
+
+    const result = await useRequestBuilder().getRequest(
+        buildRouteUrl(from, to),
+        {
+            access_token: config.public.mapbox.accessToken,
+            geometries: 'geojson',
+            steps: 'false',
+            overview: 'full',
+        }
+    )
+
+    if (!result.success) {
+        console.error('[getRoute] Failed to get route:', result.errorMessage)
+        return { success: false, error: result.errorMessage }
+    }
+
+    try {
+        const data = await result.data.json()
+        const route = data.routes[0]
+        const geometry: GeoJSON.Geometry = route.geometry
+        const distance = route.distance as number
+
+        const geojson: GeoJSON.Feature<GeoJSON.Geometry> = {
+            type: 'Feature',
+            properties: {},
+            geometry,
+        }
+
+        drawRoute(geojson)
+
+        return { success: true, data: { distance } }
+    } catch (error) {
+        console.error('[getRoute] Failed to parse route data:', error)
+        return { success: false, error: 'Failed to parse route data' }
+    }
+}
+
+defineExpose({ flyTo, getRoute })
 </script>
+
+<template>
+  <div class="relative w-full h-full">
+    <div ref="mapContainer" class="w-full h-full" />
+    <Transition name="map-fade">
+      <div v-if="!isLoaded" class="absolute inset-0">
+        <USkeleton class="w-full h-full rounded-none" />
+      </div>
+    </Transition>
+  </div>
+</template>
 
 <style scoped>
 .map-fade-enter-active,
