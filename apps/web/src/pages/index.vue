@@ -374,7 +374,7 @@ async function submitReservation() {
       color="neutral"
       variant="ghost"
       class="absolute top-5 right-5 z-10 rounded-full bg-gray-100 dark:bg-dark-700 pl-1.5 pr-4 py-1.5 opacity-100 hover:opacity-90 hover:bg-gray-200 dark:hover:bg-dark-600 active:scale-[0.98] group"
-      @onclick="isInputHidden = !isInputHidden"
+      @click="() => { isInputHidden = !isInputHidden }"
     >
       <template #leading>
         <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-dark-500 group-hover:bg-gray-400 dark:group-hover:bg-dark-400 transition-colors duration-200">
