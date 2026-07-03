@@ -13,12 +13,18 @@ import { useReservations } from '~/composables/database/reservations/useReservat
 import DateTimePickup from '~/components/pages/reservation/DateTimePickup.vue'
 import ContactData from '~/components/pages/reservation/ContactData.vue'
 import ReservationSummary from '~/components/pages/reservation/ReservationSummary.vue'
+import ManualReservationAddress from '~/components/pages/reservation/ManualReservationAddress.vue'
 import Map from '~/components/shared/Map/Map.vue'
 import ContinueButton from '~/components/shared/buttons/ContinueButton.vue'
 import SummaryButton from '~/components/shared/buttons/SummaryButton.vue'
 import ReservationButton from '~/components/shared/buttons/ReservationButton.vue'
 import ReservationCodeBadge from '~/components/shared/ReservationCode/ReservationCodeBadge.vue'
 import { DEFAULT_COUNTRY_CODE, type CountryCode } from '~/utils/ui/countryCodes'
+import { useReverseGeocoding } from '~/composables/geolocation/useReverseGeocoding'
+
+
+type ManualModeLocationType = 'pickup' | 'destination'
+
 
 const mapRef = ref<InstanceType<typeof Map> | null>(null)
 
@@ -27,7 +33,7 @@ definePageMeta({ layout: 'reservation' })
 
 const { createReservation } = useReservations()
 
-const RESERVATION_INTERNAL_ERROR_TITLE = 'Nieudało się wykonać rezerwacji'
+const RESERVATION_INTERNAL_ERROR_TITLE = 'Nie udało się wykonać rezerwacji'
 const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
   'Wystąpił wewnętrzny błąd aplikacji, prosimy skontaktuj się z nami.'
 
@@ -35,6 +41,16 @@ const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
 const pickupLocation = ref<TomLocation | undefined>()
 const destination = ref<TomLocation | undefined>()
 const distance = ref<number | undefined>()
+
+const manualMode = ref(false)
+const manualModeLocationType = ref<ManualModeLocationType>("pickup")
+const showManualReservationAddress = ref(false)
+const showManualReservationAddressTimeout = ref<NodeJS.Timeout | undefined>(undefined)
+const manualLocationTimeout = ref<NodeJS.Timeout | undefined>(undefined)
+const fetchingReverseGeocoding = ref(false)
+const reverseGeocodingResult = ref<TomLocation | undefined>()
+const currentLat = ref<number | undefined>()
+const currentLon = ref<number | undefined>()
 
 // Step 2
 const rideDateDraft = ref('')
@@ -142,6 +158,43 @@ watch(destination, async (newVal) => {
 })
 
 
+watch([manualMode, currentLat, currentLon], async () => {
+    if (!manualMode.value || !currentLat.value || !currentLon.value) return
+    if (manualLocationTimeout.value) clearTimeout(manualLocationTimeout.value)
+    if (showManualReservationAddressTimeout.value) clearTimeout(showManualReservationAddressTimeout.value)
+
+    showManualReservationAddress.value = false
+    fetchingReverseGeocoding.value = true
+    
+    manualLocationTimeout.value = setTimeout(() => {
+        findManualLocation(currentLat.value!, currentLon.value!)
+    }, 1500)
+
+    showManualReservationAddressTimeout.value = setTimeout(() => {
+        showManualReservationAddress.value = true
+    }, 300)
+})
+
+
+async function findManualLocation(lat: number, lon: number): Promise<void> {
+    const result = await useReverseGeocoding().callReverseGeocoding(lat, lon)
+    fetchingReverseGeocoding.value = false
+
+    // Outdated
+    if (currentLat.value !== lat || currentLon.value !== lon) return
+
+    if (!result.success) {
+        errorNotification('Wystąpił problem podczas pobierania lokalizacji')
+        console.error('[manualMode] Failed to get reverse geocoding:', result.error)
+        return
+    }
+    
+    if (result.data === null) return
+
+    reverseGeocodingResult.value = result.data
+}
+
+
 const phase1Schema = z.object({
     pickupLocation: TomLocationSchema,
     destination: TomLocationSchema,
@@ -207,7 +260,6 @@ function validateAndAdvance() {
         step.value = 2
     }
     else if (step.value === 2) {
-        console.log('isStep2Valid', isStep2Valid.value)
         if (!isStep2Valid.value) {
             infoNotification('Popraw błędy w formularzu', 'Uzupełnij wymagane pola')
             return
@@ -222,6 +274,14 @@ function validateAndAdvance() {
         step.value = 4
         steps4Visited.value = true
     }
+}
+
+
+function handleToggleManualMode(locationType: ManualModeLocationType) {
+    console.log("handleToggleManualMode", locationType)
+    manualModeLocationType.value = locationType
+    manualMode.value = true
+    mapRef.value?.useManualMode().enableManualMode()
 }
 
 
@@ -242,6 +302,28 @@ function handlePickupAtUpdated(newPickupAt: string): void {
         return
     }
     pickupAt.value = parsedPickupAt.data
+}
+
+
+function handleManualModeDisable() {
+    manualMode.value = false
+    mapRef.value?.useManualMode().disableManualMode()
+    reverseGeocodingResult.value = undefined
+}
+
+
+function handleManualModeConfirmation() {
+    if (!reverseGeocodingResult.value || !mapRef.value) return
+  
+    if (manualModeLocationType.value === 'pickup') {
+        pickupLocation.value = reverseGeocodingResult.value
+        mapRef.value?.flyTo(pickupLocation.value.position.lat, pickupLocation.value.position.lon, 'pickup')
+    } else {
+        destination.value = reverseGeocodingResult.value
+        mapRef.value?.flyTo(destination.value.position.lat, destination.value.position.lon, 'destination')
+    }
+
+    handleManualModeDisable()
 }
 
 /**
@@ -280,14 +362,19 @@ async function submitReservation() {
       class="absolute inset-0 z-0 transition-all duration-500"
       :class="step !== 1 ? 'blur-sm pointer-events-none brightness-75' : ''"
     >
-      <Map ref="mapRef" />
+      <Map
+        ref="mapRef"
+        v-model:current-lat="currentLat"
+        v-model:current-lon="currentLon"
+        :manual-mode="manualMode"
+      />
     </div>
     <UButton
       v-if="step === 1 && isInputHidden"
       color="neutral"
       variant="ghost"
       class="absolute top-5 right-5 z-10 rounded-full bg-gray-100 dark:bg-dark-700 pl-1.5 pr-4 py-1.5 opacity-100 hover:opacity-90 hover:bg-gray-200 dark:hover:bg-dark-600 active:scale-[0.98] group"
-      @click="isInputHidden = !isInputHidden"
+      @onclick="isInputHidden = !isInputHidden"
     >
       <template #leading>
         <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-dark-500 group-hover:bg-gray-400 dark:group-hover:bg-dark-400 transition-colors duration-200">
@@ -371,7 +458,9 @@ async function submitReservation() {
           <!-- Phase 1: Place -->
           <div v-if="step === 1" key="phase1" class="pt-4">
             <section class="text-center">
-              <div class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
+              <div 
+                v-if="!manualMode"
+                class="rounded-2xl bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm border border-gray-100 dark:border-dark-700 p-5 shadow-sm">
                 <LocationSearchInput
                   v-model:from-model-value="pickupLocation"
                   v-model:to-model-value="destination"
@@ -380,14 +469,32 @@ async function submitReservation() {
                   to-label="Cel podróży"
                   placeholder="Wpisz lub wybierz lokalizację..."
                   to-placeholder="Dokąd jedziesz?"
-                  icon="i-lucide-map-pin"
                   to-icon="i-lucide-navigation"
                   :is-input-hidden="isInputHidden"
                   @from-location-selected="handlePickupLocationSelected"
                   @to-location-selected="handleDestinationSelected"
                   @toggle-input-visibility="isInputHidden = !isInputHidden"
+                  @toggle-manual-mode="handleToggleManualMode"
                 />
               </div>
+              <UButton
+                v-else
+                color="neutral"
+                variant="ghost"
+                class="absolute top-0 right-0 rounded-full bg-gray-100 dark:bg-dark-700 mt-8 pl-1.5 pr-1.5 [@media(min-height:700px)]:pr-4 py-1.5 opacity-80 hover:opacity-100 hover:bg-gray-200 dark:hover:bg-dark-600 active:scale-[0.98] group"
+                @click="handleManualModeDisable"
+              >
+                <template #leading>
+                  <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-300 dark:bg-dark-500 group-hover:bg-gray-400 dark:group-hover:bg-dark-400 transition-colors duration-200">
+                    <UIcon name="i-lucide-eye" class="size-4 text-white" />
+                  </span>
+                </template>
+                <span
+                  class="hidden [@media(min-height:700px)]:inline text-sm font-semibold text-gray-500 dark:text-gray-400"
+                >
+                  {{ manualMode ? 'Automatyczny tryb' : 'Tryb manualny' }}
+                </span>
+              </UButton>
             </section>
           </div>
 
@@ -453,9 +560,15 @@ async function submitReservation() {
     </div>
     <div
       v-if="step === 1"
-      class="w-[220px] fixed bottom-20 left-1/2 -translate-x-1/2 z-20 flex items-center gap-5"
+      class="w-full max-w-md px-5 fixed bottom-20 left-1/2 -translate-x-1/2 z-20 flex justify-center items-center gap-5"
     >
-      <ContinueButton v-if="pickupLocation && destination" text="Dalej" @click="validateAndAdvance" />
+      <ContinueButton v-if="pickupLocation && destination && !manualMode" text="Dalej" @click="validateAndAdvance" />
+      <ManualReservationAddress
+        v-if="manualMode && (fetchingReverseGeocoding || reverseGeocodingResult) && showManualReservationAddress"
+        :loading="fetchingReverseGeocoding"
+        :address="reverseGeocodingResult"
+        @continue="handleManualModeConfirmation"
+      />
     </div>
     
   </div>

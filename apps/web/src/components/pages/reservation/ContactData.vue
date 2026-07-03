@@ -1,7 +1,7 @@
 <script lang="ts">
 import { phoneNumberSchema } from '#shared/types/models/reservations/schema';
 import { z } from 'zod'
-import { COUNTRY_CODES, type CountryCode } from '~/utils/ui/countryCodes'
+import { type CountryCode, COUNTRY_CODES } from '~/utils/ui/countryCodes'
 
 
 export const phase3Schema = z.object({
@@ -20,7 +20,7 @@ const phoneNumber = defineModel<string>('phoneNumber', { required: true })
 const selectedCountry = defineModel<CountryCode>('selectedCountry', { required: true })
 const finalPhoneNumber = defineModel<string>('finalPhoneNumber', { required: true })
 
-const phoneNumberFocused = ref(false)
+const showPhoneNumberError = ref(false)
 const phoneNumberError = ref("")
 
 
@@ -44,16 +44,18 @@ const filteredCountries = computed(() => {
 
 
 watch(
-    [selectedCountry, phoneNumber],
-    ([country, phone]) => {
-        const parseResult = phoneNumberSchema.safeParse(`${country.dial}${phone}`)
+    [firstName, lastName, selectedCountry, phoneNumber],
+    () => {
+        const combinedPhoneNumber = `${selectedCountry.value.dial}${phoneNumber.value}`
+        const parseResult = phase3Schema.safeParse({ firstName: firstName.value, lastName: lastName.value, phoneNumber: combinedPhoneNumber })
 
         if (parseResult.success) {
-            finalPhoneNumber.value = parseResult.data;
+            finalPhoneNumber.value = combinedPhoneNumber;
             phoneNumberError.value = "";
             isStepValid.value = true;
-        } else if (phoneNumberFocused.value) {
-            phoneNumberError.value = (parseResult.error.issues[0]?.message || "");
+        } else {
+            console.log(parseResult.error.issues)
+            phoneNumberError.value = parseResult.error.issues.find((issue) => issue.path[0] === 'phoneNumber')?.message || "";
             isStepValid.value = false;
         }
     },
@@ -115,7 +117,7 @@ watch(
                       :key="country.code"
                       class="flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
                       :class="selectedCountry.code === country.code ? 'bg-primary/10 text-primary font-medium' : 'text-gray-700 dark:text-gray-300'"
-                      @click="selectedCountry = country;"
+                      @click="() => { selectedCountry = {...country}; }"
                     >
                       <img :src="country.image" :alt="country.countryName" class="size-4" >
                       <span class="font-mono">{{ country.dial }}</span>
@@ -136,13 +138,13 @@ watch(
               placeholder="123 456 789"
               icon="i-lucide-phone"
               class="flex-1"
-              :color="phoneNumberError ? 'error' : 'primary'"
-              :highlight="!!phoneNumberError"
+              :color="phoneNumberError && showPhoneNumberError ? 'error' : 'primary'"
+              :highlight="!!phoneNumberError && showPhoneNumberError"
               inputmode="numeric"
-              @blur="phoneNumberFocused = true"
+              @blur="showPhoneNumberError = true"
             />
           </div>
-          <p v-if="phoneNumberError" class="text-left text-xs text-error mt-1.5">
+          <p v-if="phoneNumberError && showPhoneNumberError" class="text-left text-xs text-error mt-1.5">
             {{ phoneNumberError }}
           </p>
         </div>

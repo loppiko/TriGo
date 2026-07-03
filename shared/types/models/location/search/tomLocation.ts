@@ -8,7 +8,7 @@ import type { TomLocation } from './schema'
 /**
  * Reconstructs a fuzzy-search-shaped TomLocation from a persisted Place (round-trip after TomLocationToPlace).
  */
-function placeToTomLocation(place: Place, options: { dist?: number }): TomLocation {
+function placeToTomLocation(place: Place): TomLocation {
     const locationName = place.name
 
     const type =
@@ -25,7 +25,6 @@ function placeToTomLocation(place: Place, options: { dist?: number }): TomLocati
         type,
         score: 1,
         id: place.id ?? '',
-        dist: options.dist,
         address: {
             freeformAddress: place.freeformAddress,
             municipality: place.municipality,
@@ -52,13 +51,8 @@ function placeToTomLocation(place: Place, options: { dist?: number }): TomLocati
 }
 
 
-export function reservationPickupLocationToTomLocation(reservation: Reservation): TomLocation {
-    return placeToTomLocation(reservation.pickup, {})
-}
-
-
-export function reservationDestinationLocationToTomLocation(reservation: Reservation): TomLocation {
-    return placeToTomLocation(reservation.destination, { dist: reservation.distance })
+export function reservationLocationToTomLocation(reservation: Reservation): TomLocation {
+    return placeToTomLocation(reservation.pickup)
 }
 
 
@@ -72,7 +66,7 @@ export function TomLocationToPlace(loc: TomLocation): Place {
         lat: loc.position.lat,
         lon: loc.position.lon,
         freeformAddress: loc.address.freeformAddress,
-        municipality: loc.address.municipality,
-        countryCode: loc.address.countryCode,
+        municipality: loc.address.municipality ?? '',
+        countryCode: loc.address.countryCode ?? '',
     }
 }

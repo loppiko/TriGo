@@ -5,6 +5,7 @@ import type { TomLocation } from '#shared/types/models/location/search/schema'
 import type { PlaceCoordinates } from '#shared/types/models/location/schema'
 import { formatRouteDistanceMeters } from '#shared/ui/distance/distance'
 import { useWindowSize } from '@vueuse/core'
+import ManualPinIcon from '../icons/ManualPinIcon.vue'
 
 
 const props = withDefaults(defineProps<{
@@ -26,15 +27,15 @@ const props = withDefaults(defineProps<{
     toLabel: '',
     placeholder: 'Type location',
     toPlaceholder: 'Dokąd jedziesz?',
-    icon: 'i-lucide-map-pin',
+    icon: 'i-lucide-dot',
     toIcon: 'i-lucide-navigation',
     isInputHidden: false,
 })
 
-
 const emit = defineEmits<{
     (event: 'update:fromModelValue' | 'update:toModelValue', value: TomLocation | undefined): void
     (event: 'from-location-selected' | 'to-location-selected', value: TomLocation): void
+    (event: 'toggle-manual-mode', locationType: 'pickup' | 'destination'): void
     (event: 'toggle-input-visibility'): void
 }>()
 
@@ -45,7 +46,9 @@ const fromSearchState = ref(fromQuery.value)
 const toSearchState = ref(toQuery.value)
 
 const fromHasFocus = ref(false)
+const fromManualHasFocus = ref(false)
 const toHasFocus = ref(false)
+const toManualHasFocus = ref(false)
 
 const fromInputContainerRef = ref<HTMLElement | null>(null)
 const toInputContainerRef = ref<HTMLElement | null>(null)
@@ -176,15 +179,19 @@ function handleToSelectResult(item: TomLocation) {
 
 function handleFromBlur() {
     window.setTimeout(() => {
-        fromHasFocus.value = false
-    }, 120)
+        if (!fromManualHasFocus.value) {
+            fromHasFocus.value = false
+        }
+    }, 50)
 }
 
 
 function handleToBlur() {
     window.setTimeout(() => {
-        toHasFocus.value = false
-    }, 120)
+        if (!toManualHasFocus.value) {
+            toHasFocus.value = false
+        }
+    }, 50)
 }
 
 
@@ -230,7 +237,7 @@ async function beginEditTo() {
 
 <template>
   <div 
-    class="flex items-start gap-2 relative"
+    class="relative flex w-full min-w-0 items-start gap-2"
     :class="isMobileLayout ? 'flex-col' : 'flex-row'"
   >
     <UButton
@@ -247,8 +254,8 @@ async function beginEditTo() {
     />
 
     <div 
-      class="flex-1"
-      :class="isMobileLayout ? 'w-full' : 'w-[calc(min(100%,600px))'"
+      class="min-w-0 flex-1"
+      :class="isMobileLayout ? 'w-full' : ''"
     >
       <label
         v-if="fromLabel"
@@ -256,7 +263,7 @@ async function beginEditTo() {
       >
         {{ fromLabel }}
       </label>
-      <div class="relative">
+      <div class="relative min-w-0">
         <div
           v-if="fromModelValue && !fromHasFocus"
           class="flex w-full cursor-pointer gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:hover:bg-dark-700"
@@ -294,13 +301,35 @@ async function beginEditTo() {
           <UInput
             :model-value="fromQuery"
             :placeholder="placeholder"
-            :icon="icon"
+            icon="i-lucide-map-pin"
             size="xl"
             class="w-full"
+            :ui="fromHasFocus ? { 
+              leading: 'pl-2 pr-2', 
+              trailing: 'pe-1' 
+            } : {}"
             @update:model-value="handleFromQueryInput"
             @focus="fromHasFocus = true"
             @blur="handleFromBlur"
-          />
+          >
+            <template v-if="fromHasFocus" #trailing>
+              <UTooltip
+                :text="'Wskaż lokalizację na mapie'"
+                :arrow="true"
+                :delay-duration="0"
+              >
+                <button 
+                  type="button"
+                  class="p-1.75 ml-1 w-8 h-8 flex items-center bg-white dark:bg-dark-900 justify-center rounded-md hover:bg-gray-200 dark:hover:bg-dark-700"
+                  @click="emit('toggle-manual-mode', 'pickup')"
+                  @focus="fromManualHasFocus = true"
+                  @blur="fromManualHasFocus = false"
+                >
+                  <ManualPinIcon :size="40" />
+                </button>
+              </UTooltip>
+            </template>
+          </UInput>
         </div>
 
         <div
@@ -381,7 +410,7 @@ async function beginEditTo() {
       </div>
     </div>
  
-    <div v-if="fromChoosenLocation" class="flex items-center self-stretch gap-1" :class="isMobileLayout ? 'flex-row pt-4 relative' : 'flex-col pt-5'">
+    <div v-if="fromChoosenLocation" class="flex shrink-0 items-center self-stretch gap-1" :class="isMobileLayout ? 'flex-row pt-4 relative' : 'flex-col pt-5'">
       <span
         v-if="distance && distance >= 0"
         class="absolute top-[-3px] text-[11px] mx-auto text-gray-400 dark:text-gray-500"
@@ -398,14 +427,14 @@ async function beginEditTo() {
       <div class="flex-1 bg-gray-200 dark:bg-dark-600" :class="isMobileLayout ? 'h-px' : 'w-px'" />
     </div>
 
-    <div v-show="toInputActive" class="flex-1" :class="isMobileLayout ? 'w-full' : 'min-w-0'">
+    <div v-show="toInputActive" class="min-w-0 flex-1" :class="isMobileLayout ? 'w-full' : ''">
       <label
         v-if="toLabel"
         class="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400"
       >
         {{ toLabel }}
       </label>
-      <div class="relative">
+      <div class="relative min-w-0">
         <div
           v-if="toModelValue && !toHasFocus && toInputActive"
           class="flex w-full cursor-pointer gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-left transition-colors hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:hover:bg-dark-700"
@@ -428,7 +457,7 @@ async function beginEditTo() {
               </p>
             </div>
             <div
-              v-if="toModelValue.address?.municipality || (toModelValue.dist != null && toModelValue.dist >= 0)"
+              v-if="toModelValue.address?.municipality"
               class="flex shrink-0 flex-col items-end gap-0.5 self-start text-right leading-tight"
             >
               <span
@@ -452,10 +481,32 @@ async function beginEditTo() {
             :disabled="!toInputActive"
             size="lg"
             class="w-full"
+            :ui="toHasFocus ? { 
+              leading: 'pl-2 pr-2', 
+              trailing: 'pe-1' 
+            } : {}"
             @update:model-value="handleToQueryInput"
             @focus="toHasFocus = true"
             @blur="handleToBlur"
-          />
+          >
+            <template v-if="toHasFocus" #trailing>
+              <UTooltip
+                :text="'Wskaż lokalizację na mapie'"
+                :arrow="true"
+                :delay-duration="0"
+              >
+                <button 
+                  type="button"
+                  class="p-1.75 ml-1 w-8 h-8 flex items-center bg-white dark:bg-dark-900 justify-center rounded-md hover:bg-gray-200 dark:hover:bg-dark-700"
+                  @click="() => { console.log('cliecked'); emit('toggle-manual-mode', 'destination') }"
+                  @focus="toManualHasFocus = true"
+                  @blur="toManualHasFocus = false"
+                >
+                  <ManualPinIcon :size="40" />
+                </button>
+              </UTooltip>
+            </template>
+          </UInput>
         </div>
 
         <div
@@ -511,7 +562,7 @@ async function beginEditTo() {
                     </p>
                   </div>
                   <div
-                    v-if="item.address?.municipality || (item.dist != null && item.dist >= 0)"
+                    v-if="item.address?.municipality"
                     class="flex shrink-0 flex-col items-end gap-0.5 self-start text-right leading-tight"
                   >
                     <span

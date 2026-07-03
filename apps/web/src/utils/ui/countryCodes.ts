@@ -40,4 +40,4 @@ export const COUNTRY_CODES: CountryCode[] = [
 ]
 
 
-export const DEFAULT_COUNTRY_CODE = COUNTRY_CODES.find((c) => c.code === 'PL')!
+export const DEFAULT_COUNTRY_CODE = {...COUNTRY_CODES.find((c) => c.code === 'PL')!}

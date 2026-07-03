@@ -34,13 +34,11 @@ const fuzzyPoiSchema = z.object({
  * @see https://developer.tomtom.com/search-api/documentation/search-service/fuzzy-search#response-data
  * @param score - Score of the result. A larger score means there is a probability that a result meeting the query criteria is higher.
  * @param poi - Information about the Points of Interest in the result. Optional section. Only present if type == POI. Uses `classifications` per TomTom Search API.
- * @param dist - Distance from the choosen location to the result in meters. Only present when geobias is provided.
  */
 export const fuzzyResultSchema = z.object({
     type: z.enum(TomSearchResultType),
     id: z.string(),
     score: z.number(),
-    dist: z.number().optional(),
     info: z.string().optional(),
     poi: fuzzyPoiSchema.optional(),
     address: fuzzyAddressSchema,

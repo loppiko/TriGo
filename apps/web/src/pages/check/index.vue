@@ -39,7 +39,7 @@ const showReservationList = computed(() => useReservationStore().reservations.le
             square
             class="group size-12 justify-center rounded-full"
             :ui="{ leadingIcon: 'size-7 transition-transform duration-300 ease-out group-hover:-translate-y-0.5' }"
-            @click="forceSearch = true"
+            @click="() => { forceSearch = true }"
           />
           <span class="text-xs font-medium text-gray-500 dark:text-gray-400">
             Dodaj rezerwację

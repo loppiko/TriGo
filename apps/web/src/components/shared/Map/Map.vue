@@ -3,25 +3,31 @@ import type { PlaceCoordinates } from '#shared/types/models/location/schema'
 import type { Result } from '#shared/types/core'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import ManualPinIcon from '~/components/shared/icons/ManualPinIcon.vue'
+import { errorNotification } from '~/utils/notifications/toast'
+
+type MarkerType = 'pickup' | 'destination'
 
 const config = useRuntimeConfig()
-/** Center of Trójmieście [lng, lat] */
 
+/** Center of Trójmieście [lng, lat] */
 const DEFAULT_CENTER: [number, number] = [Number(config.public.mapbox.defaultCenterLng), Number(config.public.mapbox.defaultCenterLat)]
 const DEFAULT_ZOOM = Number(config.public.mapbox.defaultZoom)
 const ZOOM_3D_THRESHOLD = Number(config.public.mapbox.defaultZoom3dThreshold)
 const PITCH_3D = 50
 const PITCH_FLAT = 0
 const TRANSITION_DURATION_MS = 900
-
-const mapContainer = ref<HTMLDivElement | null>(null)
-const isLoaded = ref(false)
-type MarkerType = 'pickup' | 'destination'
-
 const MARKER_COLORS: Record<MarkerType, string> = {
     pickup: '#16a34a',
     destination: '#dc2626',
 }
+
+const mapContainer = ref<HTMLDivElement | null>(null)
+const isLoaded = ref(false)
+const isManualModeActive = ref(false)
+const currentLat = defineModel<number | undefined>('currentLat')
+const currentLon = defineModel<number | undefined>('currentLon')
+
 
 let map: mapboxgl.Map | null = null
 let is3DActive = false
@@ -39,6 +45,7 @@ onMounted(() => {
         center: DEFAULT_CENTER,
         zoom: DEFAULT_ZOOM,
         attributionControl: false,
+
     })
 
     map.addControl(new mapboxgl.AttributionControl({ compact: true }))
@@ -51,24 +58,27 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+    map?.off('move', useManualMode().syncCenterCoordinates)
     map?.remove()
     map = null
 })
 
 
 /** Smoothly flies the map camera to the given coordinates, sets zoom to 17, and places a marker. */
-function flyTo(lat: number, lng: number, markerType: MarkerType): void {
+function flyTo(lat: number, lng: number, markerType: MarkerType, drawMarker: boolean = true): void {
     if (!map) return
 
     map.flyTo({ center: [lng, lat], zoom: 17, duration: 1500 })
 
     activeMarkers.get(markerType)?.remove()
 
-    const marker = new mapboxgl.Marker({ color: MARKER_COLORS[markerType] })
-        .setLngLat([lng, lat])
-        .addTo(map)
+    if (drawMarker) {
+        const marker = new mapboxgl.Marker({ color: MARKER_COLORS[markerType] })
+            .setLngLat([lng, lat])
+            .addTo(map)
 
-    activeMarkers.set(markerType, marker)
+        activeMarkers.set(markerType, marker)
+    }
 }
 
 
@@ -88,6 +98,51 @@ function updateCameraMode(): void {
         map.easeTo({ pitch: PITCH_FLAT, duration: TRANSITION_DURATION_MS })
     }
 }
+
+
+function useManualMode() {
+    /** Writes the map viewport center into the lat/lng v-models. */
+    function syncCenterCoordinates(): void {
+        if (!map) return
+
+        const center = map.getCenter()
+        currentLat.value = center.lat
+        currentLon.value = center.lng
+    }
+
+
+    /** Enables manual location picking with a fixed center pin and live coordinate updates while panning. */
+    function enableManualMode(): void {
+        if (!map) {
+            console.error('[enableManualMode] Map not initialized')
+            errorNotification('Wystąpił problem podczas ładowania mapy')
+            return
+        }
+
+        if (isManualModeActive.value) return
+
+        isManualModeActive.value = true
+        syncCenterCoordinates()
+        map.on('move', syncCenterCoordinates)
+    }
+
+
+    /** Disables manual location picking and stops live coordinate updates. */
+    function disableManualMode(): void {
+        if (!map || !isManualModeActive.value) return
+
+        isManualModeActive.value = false
+        map.off('move', syncCenterCoordinates)
+    }
+
+    return {
+        enableManualMode,
+        disableManualMode,
+        syncCenterCoordinates,
+    }
+}
+
+
 
 
 function drawRoute(geojson: GeoJSON.Feature<GeoJSON.Geometry>): void {
@@ -184,12 +239,19 @@ async function getRoute(from: PlaceCoordinates, to: PlaceCoordinates): Promise<R
     }
 }
 
-defineExpose({ flyTo, getRoute })
+defineExpose({ flyTo, getRoute, useManualMode })
 </script>
 
 <template>
   <div class="relative w-full h-full">
     <div ref="mapContainer" class="w-full h-full" />
+    <div
+      v-if="isManualModeActive"
+      class="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-full"
+      aria-hidden="true"
+    >
+      <ManualPinIcon :size="60" :active="true" />
+    </div>
     <Transition name="map-fade">
       <div v-if="!isLoaded" class="absolute inset-0">
         <USkeleton class="w-full h-full rounded-none" />
