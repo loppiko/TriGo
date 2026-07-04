@@ -21,6 +21,7 @@ import ReservationButton from '~/components/shared/buttons/ReservationButton.vue
 import ReservationCodeBadge from '~/components/shared/ReservationCode/ReservationCodeBadge.vue'
 import { DEFAULT_COUNTRY_CODE, type CountryCode } from '~/utils/ui/countryCodes'
 import { useReverseGeocoding } from '~/composables/geolocation/useReverseGeocoding'
+import { watchIgnorable } from '@vueuse/core'
 
 
 type ManualModeLocationType = 'pickup' | 'destination'
@@ -36,6 +37,8 @@ const { createReservation } = useReservations()
 const RESERVATION_INTERNAL_ERROR_TITLE = 'Nie udało się wykonać rezerwacji'
 const RESERVATION_INTERNAL_ERROR_DESCRIPTION =
   'Wystąpił wewnętrzny błąd aplikacji, prosimy skontaktuj się z nami.'
+
+const mainContentRef = ref<HTMLElement | null>(null)
 
 // Step 1
 const pickupLocation = ref<TomLocation | undefined>()
@@ -278,7 +281,6 @@ function validateAndAdvance() {
 
 
 function handleToggleManualMode(locationType: ManualModeLocationType) {
-    console.log("handleToggleManualMode", locationType)
     manualModeLocationType.value = locationType
     manualMode.value = true
     mapRef.value?.useManualMode().enableManualMode()
@@ -302,6 +304,14 @@ function handlePickupAtUpdated(newPickupAt: string): void {
         return
     }
     pickupAt.value = parsedPickupAt.data
+}
+
+
+/**
+ * Prevent user zoom on mobile devices, after map is loaded, but other element is focused.
+ */
+function preventZoomOnMobile() {
+    mainContentRef.value?.blur();
 }
 
 
@@ -358,6 +368,7 @@ async function submitReservation() {
 
 <template>
   <div
+    ref="mainContentRef"
     class="relative h-[calc(100vh-3.55rem)]"
     :class="step === 1 && !mapRef?.loaded ? 'touch-none!' : ''"
   >
@@ -370,6 +381,7 @@ async function submitReservation() {
         v-model:current-lat="currentLat"
         v-model:current-lon="currentLon"
         :manual-mode="manualMode"
+        @on-loaded="preventZoomOnMobile"
       />
     </div>
     <UButton

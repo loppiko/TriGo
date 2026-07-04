@@ -8,6 +8,12 @@ import { errorNotification } from '~/utils/notifications/toast'
 
 type MarkerType = 'pickup' | 'destination'
 
+
+const emit = defineEmits<{
+  (e: 'onLoaded'): void
+}>()
+
+
 const config = useRuntimeConfig()
 
 /** Center of Trójmieście [lng, lat] */
@@ -46,7 +52,6 @@ onMounted(() => {
         center: DEFAULT_CENTER,
         zoom: DEFAULT_ZOOM,
         attributionControl: false,
-
     })
 
     map.addControl(new mapboxgl.AttributionControl({ compact: true }))
@@ -54,6 +59,8 @@ onMounted(() => {
     map.on('load', () => {
         setTimeout(() => {
             isLoaded.value = true
+            console.log('map loaded')
+            emit('onLoaded')
         }, MAP_ANIMATION_LOADING_DURATION_MS)
     })
 
