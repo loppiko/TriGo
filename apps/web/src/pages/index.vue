@@ -357,7 +357,10 @@ async function submitReservation() {
 </script>
 
 <template>
-  <div class="relative h-[calc(100vh-3.55rem)]">
+  <div
+    class="relative h-[calc(100vh-3.55rem)]"
+    :class="step === 1 && !mapRef?.loaded ? 'touch-none!' : ''"
+  >
     <div
       class="absolute inset-0 z-0 transition-all duration-500"
       :class="step !== 1 ? 'blur-sm pointer-events-none brightness-75' : ''"

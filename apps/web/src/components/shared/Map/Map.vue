@@ -239,7 +239,7 @@ async function getRoute(from: PlaceCoordinates, to: PlaceCoordinates): Promise<R
     }
 }
 
-defineExpose({ flyTo, getRoute, useManualMode })
+defineExpose({ flyTo, getRoute, useManualMode, loaded: isLoaded })
 </script>
 
 <template>
