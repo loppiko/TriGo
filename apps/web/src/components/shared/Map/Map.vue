@@ -17,6 +17,7 @@ const ZOOM_3D_THRESHOLD = Number(config.public.mapbox.defaultZoom3dThreshold)
 const PITCH_3D = 50
 const PITCH_FLAT = 0
 const TRANSITION_DURATION_MS = 900
+const MAP_ANIMATION_LOADING_DURATION_MS = 600
 const MARKER_COLORS: Record<MarkerType, string> = {
     pickup: '#16a34a',
     destination: '#dc2626',
@@ -51,7 +52,9 @@ onMounted(() => {
     map.addControl(new mapboxgl.AttributionControl({ compact: true }))
 
     map.on('load', () => {
-        isLoaded.value = true
+        setTimeout(() => {
+            isLoaded.value = true
+        }, MAP_ANIMATION_LOADING_DURATION_MS)
     })
 
     map.on('zoomend', updateCameraMode)
@@ -141,8 +144,6 @@ function useManualMode() {
         syncCenterCoordinates,
     }
 }
-
-
 
 
 function drawRoute(geojson: GeoJSON.Feature<GeoJSON.Geometry>): void {
