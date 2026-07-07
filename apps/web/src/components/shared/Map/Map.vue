@@ -40,6 +40,7 @@ const MARKER_COLORS: Record<LocationType, string> = {
 const mapContainer = ref<HTMLDivElement | null>(null)
 const isLoaded = ref(false)
 const isManualModeActive = ref(false)
+const isUserLocationLoading = ref(false)
 const currentLat = defineModel<number | undefined>('currentLat')
 const currentLon = defineModel<number | undefined>('currentLon')
 
@@ -117,7 +118,9 @@ function updateCameraMode(): void {
 
 
 async function onUserPosition() {
+    isUserLocationLoading.value = true
     const result = await useUserPosition().getUserPosition()
+    isUserLocationLoading.value = false
     emit('onUserPositionUpdated', result)
 }
 
@@ -275,15 +278,17 @@ defineExpose({ flyTo, getRoute, useManualMode, loaded: isLoaded })
     <button
       v-if="showGetUserPositionButton"
       type="button"
+      :disabled="isUserLocationLoading"
+
       class="pointer-events-auto absolute right-16 bottom-19 [@media(max-width:530px)]:right-8 flex items-center justify-center z-10 size-14 rounded-full bg-white dark:bg-dark-800 shadow-lg shadow-black/15 border border-gray-100 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700 active:scale-95 transition-all duration-200"
       :class="{ '[@media(max-width:530px)]:bottom-48': placeLocationButtonHigh }"
       aria-label="Moja lokalizacja"
       @click="onUserPosition"
     >
       <UIcon
-        name="i-lucide-locate-fixed" 
+        :name="isUserLocationLoading ? 'i-lucide-loader-circle' : 'i-lucide-locate-fixed'"
         class="size-7"
-        :class="!userLocationPermissionsDenied ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-400'" />
+        :class="{ 'text-primary-600 dark:text-primary-400': !userLocationPermissionsDenied, 'text-gray-400 dark:text-gray-400': userLocationPermissionsDenied, 'animate-spin': isUserLocationLoading }" />
     </button>
     <Transition name="map-fade">
       <div v-if="!isLoaded" class="absolute inset-0">

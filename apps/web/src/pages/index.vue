@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { z } from 'zod'
-import type { Result } from '#shared/types/core'
+import type { Result, ResultWithErrorType } from '#shared/types/core'
 import { TomLocationSchema, type TomLocation } from '#shared/types/models/location/search/schema'
 import { dateTimeSchema, reservationSchema, type DateTime, type Reservation } from '#shared/types/models/reservations/schema'
 import { errorNotification, infoNotification, warningNotification } from '~/utils/notifications/toast'
@@ -9,7 +9,6 @@ import { ReservationStatus } from '#shared/types/models/reservations/enums'
 import type { PickupTypeEnum } from '#shared/types/models/reservations/enums'
 import { TomLocationToPlace } from '#shared/types/models/location/search/tomLocation'
 import { useReservations } from '~/composables/database/reservations/useReservations'
-
 import DateTimePickup from '~/components/pages/reservation/DateTimePickup.vue'
 import ContactData from '~/components/pages/reservation/ContactData.vue'
 import ReservationSummary from '~/components/pages/reservation/ReservationSummary.vue'
@@ -21,8 +20,9 @@ import ReservationButton from '~/components/shared/buttons/ReservationButton.vue
 import ReservationCodeBadge from '~/components/shared/ReservationCode/ReservationCodeBadge.vue'
 import { DEFAULT_COUNTRY_CODE, type CountryCode } from '~/utils/ui/countryCodes'
 import { useReverseGeocoding } from '~/composables/geolocation/useReverseGeocoding'
-import { useUserPosition } from '~/composables/geolocation/useUserPosition'
+import type { UserPositionErrorType } from '~/composables/geolocation/useUserPosition'
 import type { LocationType } from '~/types/location/locationType'
+import type { PlaceCoordinates } from '#shared/types/models/location/schema'
 
 
 export type ManualModeSelectionType = 'manual' | 'user-location'
@@ -315,13 +315,11 @@ function handlePickupAtUpdated(newPickupAt: string): void {
 }
 
 
-async function handleLocateUserPosition() {
-    if (userLocationPermissionsDenied.value) {
+async function handleLocateUserPosition(result: ResultWithErrorType<PlaceCoordinates, UserPositionErrorType>) {
+    if (userLocationPermissionsDenied.value && !result.success) {
         warningNotification('Nieudzielono dostępu do lokalizacji', 'Opcje pobierania lokalizacji są niedostępne. Aby to zmnienić odśwież stronę i udziel ich ponownie.')
         return
     }
-
-    const result = await useUserPosition().getUserPosition()
 
     if (result.success) {
         handleToggleManualMode({ selectionType: 'user-location' })
