@@ -61,7 +61,7 @@ const toChoosenLocation: Ref<PlaceCoordinates | null> = ref(props.toModelValue?.
 const fromLocationSearch = useLocationSearch(fromSearchState, toChoosenLocation)
 const toLocationSearch = useLocationSearch(toSearchState, fromChoosenLocation)
 
-const toInputActive = computed(() => fromChoosenLocation.value !== null)
+const toInputActive = computed(() => fromChoosenLocation.value !== null || toChoosenLocation.value !== null)
 
 const isMobileLayout = computed(() => useWindowSize().width.value < 750)
 
@@ -412,7 +412,7 @@ async function beginEditTo() {
       </div>
     </div>
  
-    <div v-if="fromChoosenLocation" class="flex shrink-0 items-center self-stretch gap-1" :class="isMobileLayout ? 'flex-row pt-4 relative' : 'flex-col pt-5'">
+    <div v-if="fromChoosenLocation || toChoosenLocation" class="flex shrink-0 items-center self-stretch gap-1" :class="isMobileLayout ? 'flex-row pt-4 relative' : 'flex-col pt-5'">
       <span
         v-if="distance && distance >= 0"
         class="absolute top-[-3px] text-[11px] mx-auto text-gray-400 dark:text-gray-500"
