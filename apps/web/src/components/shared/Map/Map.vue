@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import type { PlaceCoordinates } from '#shared/types/models/location/schema'
-import type { Result } from '#shared/types/core'
+import type { Result, ResultWithErrorType } from '#shared/types/core'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import ManualPinIcon from '~/components/shared/icons/ManualPinIcon.vue'
 import { errorNotification } from '~/utils/notifications/toast'
-
-type MarkerType = 'pickup' | 'destination'
+import { useUserPosition, type UserPositionErrorType } from '~/composables/geolocation/useUserPosition'
+import type { LocationType } from '~/types/location/locationType'
 
 
 const emit = defineEmits<{
   (e: 'onLoaded'): void
+  (e: 'onUserPositionUpdated', positionResult: ResultWithErrorType<PlaceCoordinates, UserPositionErrorType>): void
+}>()
+
+
+const _ = defineProps<{
+    showGetUserPositionButton: boolean
+    placeLocationButtonHigh: boolean
+    userLocationPermissionsDenied: boolean
 }>()
 
 
@@ -24,7 +32,7 @@ const PITCH_3D = 50
 const PITCH_FLAT = 0
 const TRANSITION_DURATION_MS = 900
 const MAP_ANIMATION_LOADING_DURATION_MS = 600
-const MARKER_COLORS: Record<MarkerType, string> = {
+const MARKER_COLORS: Record<LocationType, string> = {
     pickup: '#16a34a',
     destination: '#dc2626',
 }
@@ -38,7 +46,7 @@ const currentLon = defineModel<number | undefined>('currentLon')
 
 let map: mapboxgl.Map | null = null
 let is3DActive = false
-const activeMarkers = new Map<MarkerType, mapboxgl.Marker>()
+const activeMarkers = new Map<LocationType, mapboxgl.Marker>()
 
 
 onMounted(() => {
@@ -59,7 +67,6 @@ onMounted(() => {
     map.on('load', () => {
         setTimeout(() => {
             isLoaded.value = true
-            console.log('map loaded')
             emit('onLoaded')
         }, MAP_ANIMATION_LOADING_DURATION_MS)
     })
@@ -75,20 +82,19 @@ onUnmounted(() => {
 
 
 /** Smoothly flies the map camera to the given coordinates, sets zoom to 17, and places a marker. */
-function flyTo(lat: number, lng: number, markerType: MarkerType, drawMarker: boolean = true): void {
+function flyTo(lat: number, lng: number, locationType: LocationType | null): void {
     if (!map) return
 
     map.flyTo({ center: [lng, lat], zoom: 17, duration: 1500 })
+    if (!locationType) return
+    
+    activeMarkers.get(locationType)?.remove()
 
-    activeMarkers.get(markerType)?.remove()
+    const marker = new mapboxgl.Marker({ color: MARKER_COLORS[locationType] })
+        .setLngLat([lng, lat])
+        .addTo(map)
 
-    if (drawMarker) {
-        const marker = new mapboxgl.Marker({ color: MARKER_COLORS[markerType] })
-            .setLngLat([lng, lat])
-            .addTo(map)
-
-        activeMarkers.set(markerType, marker)
-    }
+    activeMarkers.set(locationType, marker)
 }
 
 
@@ -107,6 +113,12 @@ function updateCameraMode(): void {
         is3DActive = false
         map.easeTo({ pitch: PITCH_FLAT, duration: TRANSITION_DURATION_MS })
     }
+}
+
+
+async function onUserPosition() {
+    const result = await useUserPosition().getUserPosition()
+    emit('onUserPositionUpdated', result)
 }
 
 
@@ -260,6 +272,19 @@ defineExpose({ flyTo, getRoute, useManualMode, loaded: isLoaded })
     >
       <ManualPinIcon :size="60" :active="true" />
     </div>
+    <button
+      v-if="showGetUserPositionButton"
+      type="button"
+      class="pointer-events-auto absolute right-16 bottom-19 [@media(max-width:530px)]:right-8 flex items-center justify-center z-10 size-14 rounded-full bg-white dark:bg-dark-800 shadow-lg shadow-black/15 border border-gray-100 dark:border-dark-700 hover:bg-gray-50 dark:hover:bg-dark-700 active:scale-95 transition-all duration-200"
+      :class="{ '[@media(max-width:530px)]:bottom-48': placeLocationButtonHigh }"
+      aria-label="Moja lokalizacja"
+      @click="onUserPosition"
+    >
+      <UIcon
+        name="i-lucide-locate-fixed" 
+        class="size-7"
+        :class="!userLocationPermissionsDenied ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 dark:text-gray-400'" />
+    </button>
     <Transition name="map-fade">
       <div v-if="!isLoaded" class="absolute inset-0">
         <USkeleton class="w-full h-full rounded-none" />

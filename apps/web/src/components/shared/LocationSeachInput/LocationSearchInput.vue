@@ -6,6 +6,7 @@ import type { PlaceCoordinates } from '#shared/types/models/location/schema'
 import { formatRouteDistanceMeters } from '#shared/ui/distance/distance'
 import { useWindowSize } from '@vueuse/core'
 import ManualPinIcon from '../icons/ManualPinIcon.vue'
+import type { LocationType } from '~/types/location/locationType.js'
 
 
 const props = withDefaults(defineProps<{
@@ -32,10 +33,11 @@ const props = withDefaults(defineProps<{
     isInputHidden: false,
 })
 
+
 const emit = defineEmits<{
     (event: 'update:fromModelValue' | 'update:toModelValue', value: TomLocation | undefined): void
     (event: 'from-location-selected' | 'to-location-selected', value: TomLocation): void
-    (event: 'toggle-manual-mode', locationType: 'pickup' | 'destination'): void
+    (event: 'toggle-manual-mode', manualModeData: { selectionType: 'manual', locationType: LocationType }): void
     (event: 'toggle-input-visibility'): void
 }>()
 
@@ -321,7 +323,7 @@ async function beginEditTo() {
                 <button 
                   type="button"
                   class="p-1.75 ml-1 w-8 h-8 flex items-center bg-white dark:bg-dark-900 justify-center rounded-md hover:bg-gray-200 dark:hover:bg-dark-700"
-                  @click="emit('toggle-manual-mode', 'pickup')"
+                  @click="emit('toggle-manual-mode', { selectionType: 'manual', locationType: 'pickup' })"
                   @focus="fromManualHasFocus = true"
                   @blur="fromManualHasFocus = false"
                 >
@@ -498,7 +500,7 @@ async function beginEditTo() {
                 <button 
                   type="button"
                   class="p-1.75 ml-1 w-8 h-8 flex items-center bg-white dark:bg-dark-900 justify-center rounded-md hover:bg-gray-200 dark:hover:bg-dark-700"
-                  @click="() => { console.log('cliecked'); emit('toggle-manual-mode', 'destination') }"
+                  @click="emit('toggle-manual-mode', { selectionType: 'manual', locationType: 'destination' })"
                   @focus="toManualHasFocus = true"
                   @blur="toManualHasFocus = false"
                 >

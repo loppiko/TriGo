@@ -3,7 +3,7 @@ import { z } from 'zod'
 import type { Result } from '#shared/types/core'
 import { TomLocationSchema, type TomLocation } from '#shared/types/models/location/search/schema'
 import { dateTimeSchema, reservationSchema, type DateTime, type Reservation } from '#shared/types/models/reservations/schema'
-import { errorNotification, infoNotification } from '~/utils/notifications/toast'
+import { errorNotification, infoNotification, warningNotification } from '~/utils/notifications/toast'
 import LocationSearchInput from '~/components/shared/LocationSeachInput/LocationSearchInput.vue'
 import { ReservationStatus } from '#shared/types/models/reservations/enums'
 import type { PickupTypeEnum } from '#shared/types/models/reservations/enums'
@@ -21,10 +21,11 @@ import ReservationButton from '~/components/shared/buttons/ReservationButton.vue
 import ReservationCodeBadge from '~/components/shared/ReservationCode/ReservationCodeBadge.vue'
 import { DEFAULT_COUNTRY_CODE, type CountryCode } from '~/utils/ui/countryCodes'
 import { useReverseGeocoding } from '~/composables/geolocation/useReverseGeocoding'
-import { watchIgnorable } from '@vueuse/core'
+import { useUserPosition } from '~/composables/geolocation/useUserPosition'
+import type { LocationType } from '~/types/location/locationType'
 
 
-type ManualModeLocationType = 'pickup' | 'destination'
+export type ManualModeSelectionType = 'manual' | 'user-location'
 
 
 const mapRef = ref<InstanceType<typeof Map> | null>(null)
@@ -46,14 +47,17 @@ const destination = ref<TomLocation | undefined>()
 const distance = ref<number | undefined>()
 
 const manualMode = ref(false)
-const manualModeLocationType = ref<ManualModeLocationType>("pickup")
+const manualModeLocationType = ref<LocationType>("pickup")
+const manualModeSelectionType = ref<ManualModeSelectionType>("manual")
 const showManualReservationAddress = ref(false)
 const showManualReservationAddressTimeout = ref<NodeJS.Timeout | undefined>(undefined)
 const manualLocationTimeout = ref<NodeJS.Timeout | undefined>(undefined)
 const fetchingReverseGeocoding = ref(false)
 const reverseGeocodingResult = ref<TomLocation | undefined>()
+const showGetUserPositionButton = ref(true)
 const currentLat = ref<number | undefined>()
 const currentLon = ref<number | undefined>()
+const userLocationPermissionsDenied = ref(false)
 
 // Step 2
 const rideDateDraft = ref('')
@@ -280,9 +284,13 @@ function validateAndAdvance() {
 }
 
 
-function handleToggleManualMode(locationType: ManualModeLocationType) {
-    manualModeLocationType.value = locationType
+function handleToggleManualMode(manualModeData: { selectionType: 'user-location' } | { selectionType: 'manual', locationType: LocationType }) {
+    manualModeSelectionType.value = manualModeData.selectionType
+    if (manualModeData.selectionType === 'manual') {
+        manualModeLocationType.value = manualModeData.locationType
+    }
     manualMode.value = true
+    showGetUserPositionButton.value = false
     mapRef.value?.useManualMode().enableManualMode()
 }
 
@@ -307,6 +315,39 @@ function handlePickupAtUpdated(newPickupAt: string): void {
 }
 
 
+async function handleLocateUserPosition() {
+    if (userLocationPermissionsDenied.value) {
+        warningNotification('Nieudzielono dostępu do lokalizacji', 'Opcje pobierania lokalizacji są niedostępne. Aby to zmnienić odśwież stronę i udziel ich ponownie.')
+        return
+    }
+
+    const result = await useUserPosition().getUserPosition()
+
+    if (result.success) {
+        handleToggleManualMode({ selectionType: 'user-location' })
+        currentLat.value = result.data.lat
+        currentLon.value = result.data.lon
+        mapRef.value?.flyTo(result.data.lat, result.data.lon, null)
+        showManualReservationAddress.value = true
+        findManualLocation(result.data.lat, result.data.lon)
+    } else {
+        switch (result.errorType) {
+        case "PERMISSION_DENIED":
+            userLocationPermissionsDenied.value = true
+            return
+        case "POSITION_UNAVAILABLE":
+            errorNotification('Wystąpił problem podczas pobierania lokalizacji')
+            return
+        case "TIMEOUT":
+            errorNotification('Wystąpił problem podczas pobierania lokalizacji')
+            return
+        case "UNKNOWN_ERROR":
+            errorNotification('Wystąpił problem podczas pobierania lokalizacji')
+            return
+        }
+    }
+}
+
 /**
  * Prevent user zoom on mobile devices, after map is loaded, but other element is focused.
  */
@@ -318,19 +359,28 @@ function preventZoomOnMobile() {
 function handleManualModeDisable() {
     manualMode.value = false
     mapRef.value?.useManualMode().disableManualMode()
+    showGetUserPositionButton.value = true
     reverseGeocodingResult.value = undefined
+    manualModeSelectionType.value = 'manual'
 }
 
 
-function handleManualModeConfirmation() {
+function handleManualModeConfirmation(locationType: LocationType | null) {
     if (!reverseGeocodingResult.value || !mapRef.value) return
+
+    if (locationType) {
+        manualModeLocationType.value = locationType
+    }
   
     if (manualModeLocationType.value === 'pickup') {
         pickupLocation.value = reverseGeocodingResult.value
         mapRef.value?.flyTo(pickupLocation.value.position.lat, pickupLocation.value.position.lon, 'pickup')
-    } else {
+    } else if (manualModeLocationType.value === 'destination') {
         destination.value = reverseGeocodingResult.value
         mapRef.value?.flyTo(destination.value.position.lat, destination.value.position.lon, 'destination')
+    } else {
+        errorNotification('Wystąpił błąd wewnętrzny aplikacji. Spróbuj ponownie później.')
+        console.error('[handleManualModeConfirmation] Invalid location type:', locationType)
     }
 
     handleManualModeDisable()
@@ -369,7 +419,7 @@ async function submitReservation() {
 <template>
   <div
     ref="mainContentRef"
-    class="relative h-[calc(100vh-3.55rem)]"
+    class="relative h-[calc(100vh-3.55rem)] overflow-auto"
     :class="step === 1 && !mapRef?.loaded ? 'touch-none!' : ''"
   >
     <div
@@ -380,8 +430,12 @@ async function submitReservation() {
         ref="mapRef"
         v-model:current-lat="currentLat"
         v-model:current-lon="currentLon"
+        :user-location-permissions-denied="userLocationPermissionsDenied"
+        :place-location-button-high="isStep1Valid"
+        :show-get-user-position-button="showGetUserPositionButton"
         :manual-mode="manualMode"
         @on-loaded="preventZoomOnMobile"
+        @on-user-position-updated="handleLocateUserPosition"
       />
     </div>
     <UButton
@@ -582,6 +636,9 @@ async function submitReservation() {
         v-if="manualMode && (fetchingReverseGeocoding || reverseGeocodingResult) && showManualReservationAddress"
         :loading="fetchingReverseGeocoding"
         :address="reverseGeocodingResult"
+        :is-pickup-selected="!!pickupLocation"
+        :is-destination-selected="!!destination"
+        :mode="manualModeSelectionType"
         @continue="handleManualModeConfirmation"
       />
     </div>

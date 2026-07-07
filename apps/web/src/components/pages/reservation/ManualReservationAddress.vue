@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import type { TomLocation } from '#shared/types/models/location/search/schema'
+import type { ManualModeSelectionType } from '~/pages/index.vue';
 
 
 const props = withDefaults(defineProps<{
+    isPickupSelected: boolean
+    isDestinationSelected: boolean
+    mode: ManualModeSelectionType
     loading?: boolean
     address?: TomLocation
 }>(), {
@@ -11,13 +15,23 @@ const props = withDefaults(defineProps<{
 })
 
 defineEmits<{
-    continue: []
+    continue: [locationType: 'pickup' | 'destination' | null]
 }>()
 
 const streetName = computed(() => props.address?.address?.freeformAddress?.split(',')[0]?.trim() || 'Nie znaleziono adresu')
 const cityData = computed(() => props.address?.address?.freeformAddress?.split(',')[1]?.trim())
 const postalCode = computed(() => cityData.value?.split(' ')[0]?.trim() || 'Nieznany kod pocztowy')
 const city = computed(() => cityData.value?.split(' ')[1]?.trim() || 'Nieznane miasto')
+
+
+const bothOrNone = computed(() =>
+    props.mode === 'manual'
+    || (props.isPickupSelected && props.isDestinationSelected)
+    || (!props.isPickupSelected && !props.isDestinationSelected),
+)
+
+const isPickupButtonPrimary = computed(() => bothOrNone.value || !props.isPickupSelected)
+const isDestinationButtonPrimary = computed(() => bothOrNone.value || !props.isDestinationSelected)
 </script>
 
 <template>
@@ -58,11 +72,11 @@ const city = computed(() => cityData.value?.split(' ')[1]?.trim() || 'Nieznane m
     </div>
 
     <button
-      v-if="address && !loading"
+      v-if="address && !loading && mode === 'manual'"
       type="button"
       :disabled="loading"
       class="mt-3 w-full flex items-center gap-2 rounded-full bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 pl-5 pr-1.5 py-1.5 text-sm font-semibold text-gray-900 dark:text-white shadow-lg shadow-black/10 transition-all duration-200 enabled:hover:cursor-pointer enabled:hover:bg-gray-50 dark:enabled:hover:bg-dark-700 enabled:hover:border-primary/30 enabled:active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed group"
-      @click="$emit('continue')"
+      @click="$emit('continue', null)"
     >
       <span class="flex-1 text-center">
         {{ loading ? 'Ustalamy adres...' : 'Potwierdź lokalizację' }}
@@ -80,6 +94,54 @@ const city = computed(() => cityData.value?.split(' ')[1]?.trim() || 'Nieznane m
         />
       </span>
     </button>
+    <div
+      v-if="mode === 'user-location' && address && !loading"
+      class="mt-3 flex gap-2"
+    >
+      <button
+        type="button"
+        class="group flex flex-1 items-center gap-2 rounded-full border pl-1.5 pr-5 py-1.5 text-sm font-semibold shadow-lg shadow-black/10 transition-all duration-200 active:scale-95"
+        :class="isPickupButtonPrimary
+          ? 'bg-white dark:bg-dark-800 border-gray-100 dark:border-dark-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-dark-700 hover:border-primary/30'
+          : 'bg-gray-100 dark:bg-dark-900 border-gray-100 dark:border-dark-800 text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-dark-800'"
+        @click="$emit('continue', 'pickup')"
+      >
+        <span
+          class="flex size-8 shrink-0 items-center justify-center rounded-full transition-colors duration-200"
+          :class="isPickupButtonPrimary
+            ? 'bg-primary group-hover:bg-primary/90'
+            : 'bg-gray-300 dark:bg-dark-600'"
+        >
+          <UIcon
+            name="i-lucide-map-pin"
+            class="size-4 text-white"
+          />
+        </span>
+        <span class="flex-1 text-center truncate">Skąd</span>
+      </button>
+
+      <button
+        type="button"
+        class="group flex flex-1 items-center gap-2 rounded-full border pl-5 pr-1.5 py-1.5 text-sm font-semibold shadow-lg shadow-black/10 transition-all duration-200 active:scale-95"
+        :class="isDestinationButtonPrimary
+          ? 'bg-white dark:bg-dark-800 border-gray-100 dark:border-dark-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-dark-700 hover:border-primary/30'
+          : 'bg-gray-100 dark:bg-dark-900 border-gray-100 dark:border-dark-800 text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-dark-800'"
+        @click="$emit('continue', 'destination')"
+      >
+        <span class="flex-1 text-center truncate">Dokąd</span>
+        <span
+          class="flex size-8 shrink-0 items-center justify-center rounded-full transition-colors duration-200"
+          :class="isDestinationButtonPrimary
+            ? 'bg-primary group-hover:bg-primary/90'
+            : 'bg-gray-300 dark:bg-dark-600'"
+        >
+          <UIcon
+            name="i-lucide-navigation"
+            class="size-4 text-white"
+          />
+        </span>
+      </button>
+    </div>
   </div>
 </template>
 
